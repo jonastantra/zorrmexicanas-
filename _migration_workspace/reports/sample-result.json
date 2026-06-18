@@ -1,0 +1,45 @@
+{
+  "sql_header_lines": 80,
+  "wxr_items": {
+    "author": 1,
+    "category": 47,
+    "tag": 73201,
+    "term": 119,
+    "item": 100
+  },
+  "archives": {
+    "kingtube.tar.gz": {
+      "members_processed_this_run": 71,
+      "uncompressed_bytes_this_run": 736634,
+      "largest_member": {
+        "path": "kingtube/screenshot.png",
+        "bytes": 241705
+      },
+      "counts": {
+        "file": 66,
+        "ext:.php": 56,
+        "dir": 5,
+        "ext:[none]": 7,
+        "ext:.mo": 1,
+        "ext:.po": 1,
+        "ext:.pot": 1,
+        "ext:.json": 1,
+        "ext:.txt": 1,
+        "ext:.css": 2,
+        "ext:.png": 1
+      },
+      "complete": false
+    },
+    "uploads.tar.gz": {
+      "members_processed_this_run": 0,
+      "uncompressed_bytes_this_run": 0,
+      "largest_member": {
+        "path": "",
+        "bytes": 0
+      },
+      "counts": {},
+      "complete": false
+    }
+  },
+  "elapsed_seconds": 6.993
+}

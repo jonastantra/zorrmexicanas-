@@ -1,0 +1,16 @@
+_migration_workspace/cache/
+_migration_workspace/database/
+_migration_workspace/extracted/
+_migration_workspace/logs/
+_migration_workspace/state/
+_migration_workspace/exports/
+_migration_workspace/canonical-media/
+_migration_workspace/quarantine/
+_migration_workspace/backups/
+__pycache__/
+*.pyc
+.pytest_cache/
+gxvcqtpl_zorritasmexicanaclon.sql
+kingtube.tar.gz
+uploads.tar.gz
+zorritasmexicanascom.WordPress.2026-06-18.xml

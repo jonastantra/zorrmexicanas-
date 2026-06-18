@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-06-18T11:37:45",
+  "os": "Windows 10 Pro",
+  "arch": "64-bit",
+  "python_version": "3.12.8",
+  "node_version": "22.18.0",
+  "npm_version": "10.9.3",
+  "docker_available": false,
+  "podman_available": false,
+  "cpu_cores": 12,
+  "ram_gb": 47.8,
+  "disk_free_gb": 82.79,
+  "disk_total_gb": 446.38,
+  "workspace_base": "C:\\Users\\retro\\OneDrive\\Documentos\\zorritasmexicanas\\_migration_workspace",
+  "input_directory": "C:\\Users\\retro\\OneDrive\\Documentos\\zorritasmexicanas",
+  "concurrency_limit": 4,
+  "memory_limit_mb": 8192
+}

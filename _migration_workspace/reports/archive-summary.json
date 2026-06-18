@@ -1,0 +1,55 @@
+{
+  "kingtube.tar.gz": {
+    "members_processed_this_run": 172,
+    "uncompressed_bytes_this_run": 2355643,
+    "largest_member": {
+      "path": "kingtube/assets/stylesheets/font-awesome/fonts/fontawesome-webfont.svg",
+      "bytes": 444379
+    },
+    "counts": {
+      "dir": 25,
+      "ext:[none]": 27,
+      "file": 147,
+      "ext:.jpg": 33,
+      "ext:.js": 8,
+      "ext:.php": 80,
+      "ext:.css": 6,
+      "ext:.png": 6,
+      "ext:.gif": 1,
+      "ext:.otf": 1,
+      "ext:.eot": 1,
+      "ext:.svg": 1,
+      "ext:.ttf": 1,
+      "ext:.woff": 1,
+      "ext:.woff2": 1,
+      "ext:.mo": 1,
+      "ext:.po": 1,
+      "ext:.pot": 1,
+      "ext:.json": 1,
+      "ext:.txt": 1
+    },
+    "complete": true
+  },
+  "uploads.tar.gz": {
+    "members_processed_this_run": 98,
+    "uncompressed_bytes_this_run": 3163193550,
+    "largest_member": {
+      "path": "uploads/wp-staging/backups/zorritasmexicanas.com_20240120-113908_c50e96dfa71c.wpstg",
+      "bytes": 2892819451
+    },
+    "counts": {
+      "dir": 34,
+      "ext:[none]": 42,
+      "file": 64,
+      "ext:.html": 9,
+      "ext:.json": 4,
+      "ext:.php": 10,
+      "ext:.config": 4,
+      "ext:.log": 2,
+      "ext:.wpstg": 1,
+      "ext:.png": 1,
+      "ext:.txt": 25
+    },
+    "complete": true
+  }
+}

@@ -1,0 +1,9 @@
+[project]
+name = "wordpress-migration-tool"
+version = "0.1.0"
+requires-python = ">=3.12"
+description = "Herramientas reanudables para auditar una migración WordPress"
+
+[tool.unittest]
+start-directory = "tests"
+

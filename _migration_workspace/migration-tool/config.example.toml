@@ -1,0 +1,14 @@
+workspace_root = ".."
+source_root = "../.."
+workers = 4
+heavy_workers = 2
+batch_size = 1000
+memory_target_bytes = 8589934592
+disk_safety_ratio = 0.70
+
+[sources]
+sql = "gxvcqtpl_zorritasmexicanaclon.sql"
+wxr = "zorritasmexicanascom.WordPress.2026-06-18.xml"
+theme_archive = "kingtube.tar.gz"
+uploads_archive = "uploads.tar.gz"
+
