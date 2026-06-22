@@ -14,3 +14,42 @@ gxvcqtpl_zorritasmexicanaclon.sql
 kingtube.tar.gz
 uploads.tar.gz
 zorritasmexicanascom.WordPress.2026-06-18.xml
+zor3convertido/webapp/.env.production
+zor3convertido/webapp/.next/
+zor3convertido/webapp/node_modules/
+_migration_workspace/prod-*.log
+
+# Datos y medios locales: se conservan, pero se suben al volumen persistente,
+# nunca al repositorio Git.
+zor3convertido/webapp/public/media/thumbs/
+zor3convertido/webapp/data/
+*.db
+*.db-wal
+*.db-shm
+
+# Archivos históricos/originales y temas de referencia.
+kingtube/
+plugins-zorritasmexicanas/
+*.rar
+*.zip
+*.7z
+
+# Logs, bloqueos y capturas de trabajo.
+*.log
+*.lock
+_migration_workspace/*.png
+_migration_workspace/reports/*.csv
+_migration_workspace/reports/*.tsv
+
+# Archivos de entorno y secretos.
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Plantilla generada: conservar el generador y documentación, no una segunda
+# copia completa del proyecto.
+universal-video-theme/template/
+
+zor3convertido/webapp/tsconfig.tsbuildinfo
+zor3convertido/webapp/lib/thumbs-manifest.json

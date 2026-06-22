@@ -1,0 +1,291 @@
+import { notFound, redirect } from 'next/navigation'
+import Link from 'next/link'
+import type { Metadata } from 'next'
+import PostCard from '@/components/PostCard'
+import ShareButton from '@/components/ShareButton'
+import VideoActions from '@/components/VideoActions'
+import AdSlot from '@/components/AdSlot'
+import { getPostBySlug, getCanonicalForSlug, listRelated, listPopular, listCategories, listTags } from '@/lib/posts'
+import { SITE_CONFIG } from '@/lib/site'
+import { getPostMetrics } from '@/lib/runtime-db'
+
+export const dynamic = 'force-dynamic'
+
+function absoluteUrl(value: string): string {
+  return new URL(value, SITE_CONFIG.baseUrl).toString()
+}
+
+function toIsoDuration(value: string | null): string | undefined {
+  if (!value) return undefined
+  const hours = value.match(/(\d+)\s*(?:h|hour)/i)?.[1]
+  const minutes = value.match(/(\d+)\s*(?:min|minute)/i)?.[1]
+  const seconds = value.match(/(\d+)\s*(?:sec|second)/i)?.[1]
+  if (!hours && !minutes && !seconds) return undefined
+  return `PT${hours ? `${hours}H` : ''}${minutes ? `${minutes}M` : ''}${seconds ? `${seconds}S` : ''}`
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const post = getPostBySlug(slug)
+  if (!post) return { title: 'No encontrado' }
+  const description = (post.excerpt || post.title).replace(/\s+/g, ' ').trim().slice(0, 160)
+  const canonical = absoluteUrl(`/${post.slug}`)
+  const image = absoluteUrl(post.thumb || '/og-default.svg')
+  return {
+    title: post.title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: post.title,
+      description,
+      url: canonical,
+      images: [{ url: image, width: 640, height: 360, alt: post.title }],
+      type: 'video.other',
+    },
+    twitter: { card: 'summary_large_image', title: post.title, description, images: [image] },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large' },
+    },
+  }
+}
+
+function extractEmbedSrc(embedHtml: string | null): string | null {
+  if (!embedHtml) return null
+  const normalized = embedHtml
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'")
+    .replace(/&quot;/gi, '"')
+  const m = normalized.match(/src\s*=\s*["']([^"']+)["']/i)
+  return m ? m[1] : null
+}
+
+export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  let post = getPostBySlug(slug)
+  if (!post) {
+    // If this slug belongs to a duplicate post, redirect (308) to the canonical.
+    const canon = getCanonicalForSlug(slug)
+    if (canon) {
+      redirect(`/${canon.slug}`)
+    }
+    notFound()
+  }
+  // If post exists but is itself a duplicate (not canonical), forward to canonical.
+  const canon = getCanonicalForSlug(slug)
+  if (canon && canon.slug !== post.slug) {
+    redirect(`/${canon.slug}`)
+  }
+
+  const embedSrc = extractEmbedSrc(post.embed)
+  const related = listRelated(post.id, post.slug, { limit: 12 })
+  const runtimeMetrics = getPostMetrics(post.id)
+  const metrics = {
+    views: Math.max(post.views, runtimeMetrics?.views || 0),
+    likes: runtimeMetrics?.likes || 0,
+    dislikes: runtimeMetrics?.dislikes || 0,
+    shares: runtimeMetrics?.shares || 0,
+  }
+
+  // Strip WP block comments for clean text
+  const cleanContent = (post.content || '')
+    .replace(/<!--\s*\/?wp:[^>]*?-->/g, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  // Sidebar data
+  const topCats = listCategories({ minCount: 100, limit: 12 })
+  const topTags = listTags({ minCount: 100, limit: 18 })
+  const popularSide = listPopular({ limit: 10 })
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: post.title,
+    description: post.excerpt || post.title,
+    thumbnailUrl: [absoluteUrl(post.thumb || '/og-default.svg')],
+    uploadDate: new Date(post.date.replace(' ', 'T') + 'Z').toISOString(),
+    duration: toIsoDuration(post.duration),
+    embedUrl: embedSrc || undefined,
+    contentUrl: post.link || undefined,
+    url: absoluteUrl(`/${post.slug}`),
+    isFamilyFriendly: false,
+    inLanguage: 'es-MX',
+    interactionStatistic: post.views > 0 ? {
+      '@type': 'InteractionCounter',
+      interactionType: { '@type': 'WatchAction' },
+      userInteractionCount: post.views,
+    } : undefined,
+    keywords: [...post.categories.map(c => c.name), ...post.tags.map(t => t.name)].slice(0, 20).join(', '),
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: absoluteUrl('/') },
+      ...(post.categories[0] ? [{
+        '@type': 'ListItem',
+        position: 2,
+        name: post.categories[0].name,
+        item: absoluteUrl(`/categoria/${post.categories[0].slug}`),
+      }] : []),
+      {
+        '@type': 'ListItem',
+        position: post.categories[0] ? 3 : 2,
+        name: post.title,
+        item: absoluteUrl(`/${post.slug}`),
+      },
+    ],
+  }
+
+  return (
+    <div className="post-detail-page">
+      <article className="post-detail">
+        <nav className="breadcrumb" aria-label="Breadcrumb">
+          <Link href="/">Inicio</Link>
+          {post.categories[0] && (
+            <>
+              <span className="sep">›</span>
+              <Link href={`/categoria/${post.categories[0].slug}`}>{post.categories[0].name}</Link>
+            </>
+          )}
+          <span className="sep">›</span>
+          <span style={{ color: 'var(--text-soft)' }}>{post.title.slice(0, 40)}{post.title.length > 40 ? '…' : ''}</span>
+        </nav>
+
+        <h1>{post.title}</h1>
+
+        <div className="post-detail-meta">
+          <span>📅 {new Date(post.date).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          {post.duration && <span>⏱️ {post.duration}</span>}
+          {post.views > 0 && <span>👁️ {post.views.toLocaleString()} vistas</span>}
+        </div>
+
+        {embedSrc && (
+          <div className="video-frame">
+            <iframe
+              src={embedSrc}
+              title={post.title}
+              allow="autoplay; encrypted-media; fullscreen"
+              allowFullScreen
+              referrerPolicy="no-referrer"
+              sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+            />
+          </div>
+        )}
+
+        <VideoActions postId={post.id} title={post.title} initial={metrics} />
+        <AdSlot slot="below_player" />
+
+        <div className="post-detail-actions">
+          {post.link && (
+            <a
+              href={post.link}
+              target="_blank"
+              rel="nofollow noopener"
+              className="action-btn primary"
+            >
+              ▶ Ver fuente original
+            </a>
+          )}
+          <ShareButton title={post.title} url={`/${post.slug}`} />
+        </div>
+
+        {post.excerpt && (
+          <div className="post-detail-excerpt">{post.excerpt}</div>
+        )}
+
+        {cleanContent && (
+          <div className="post-detail-content">
+            <p>{cleanContent}</p>
+          </div>
+        )}
+
+        {post.categories.length > 0 && (
+          <div className="category-list">
+            <span className="list-label">Categorías:</span>
+            {post.categories.map(c => (
+              <Link key={c.slug} href={`/categoria/${c.slug}`}>{c.name}</Link>
+            ))}
+          </div>
+        )}
+
+        {post.tags.length > 0 && (
+          <div className="tag-list">
+            <span className="list-label">Etiquetas:</span>
+            {post.tags.map(t => (
+              <Link key={t.slug} href={`/etiqueta/${t.slug}`}>{t.name}</Link>
+            ))}
+          </div>
+        )}
+
+        {related.length > 0 && (
+          <section className="section" style={{ marginTop: 40 }}>
+            <div className="section-head">
+              <h2 className="section-title">📺 Videos relacionados</h2>
+            </div>
+            <div className="post-grid">
+              {related.map(p => <PostCard key={p.id} post={p} />)}
+            </div>
+          </section>
+        )}
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        />
+      </article>
+
+      <aside className="sidebar" aria-label="Sidebar">
+        <AdSlot slot="sidebar_top" />
+        <div className="sidebar-block">
+          <h3 className="sidebar-title">🔥 Más vistos</h3>
+          <ul className="sidebar-list">
+            {popularSide.map(p => (
+              <li key={p.id}>
+                <Link href={`/${p.slug}`}>
+                  <span style={{
+                    display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden', maxWidth: 200,
+                  }}>{p.title}</span>
+                  <span className="count">{p.views > 0 ? `${(p.views/1000).toFixed(1)}K` : ''}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="sidebar-block">
+          <h3 className="sidebar-title">📁 Categorías top</h3>
+          <ul className="sidebar-list">
+            {topCats.map(c => (
+              <li key={c.id}>
+                <Link href={`/categoria/${c.slug}`}>
+                  <span>{c.name}</span>
+                  <span className="count">{c.count.toLocaleString()}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="sidebar-block">
+          <h3 className="sidebar-title">🏷️ Tags populares</h3>
+          <div className="tag-cloud">
+            {topTags.map(t => (
+              <Link key={t.id} href={`/etiqueta/${t.slug}`}>#{t.name}</Link>
+            ))}
+          </div>
+        </div>
+        <AdSlot slot="sidebar_bottom" />
+      </aside>
+    </div>
+  )
+}
