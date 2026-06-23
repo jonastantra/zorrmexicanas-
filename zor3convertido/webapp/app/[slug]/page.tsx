@@ -11,6 +11,7 @@ import { SITE_CONFIG } from '@/lib/site'
 import { getPostMetrics } from '@/lib/runtime-db'
 
 export const revalidate = 300
+export const dynamic = 'force-static'
 
 function absoluteUrl(value: string): string {
   return new URL(value, SITE_CONFIG.baseUrl).toString()

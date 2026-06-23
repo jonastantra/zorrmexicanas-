@@ -44,6 +44,22 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const categories = listCategories({ minCount: 100, limit: 30 })
   const tags = listTags({ minCount: 100, limit: 80 })
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Zorritas Mexicanas',
+    url: baseUrl,
+    inLanguage: 'es-MX',
+    isFamilyFriendly: false,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${baseUrl.replace(/\/$/, '')}/buscar?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  }
 
   return (
     <html lang="es-MX">
@@ -55,6 +71,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
         <AgeVerification />
         <Header categories={categories} />
         <main className="site-main">{children}</main>
