@@ -10,8 +10,11 @@ import {
 } from '@/lib/posts'
 import { SEARCH_CONSOLE_TOPICS, SITE_CONFIG } from '@/lib/site'
 
+// ISR: la home se renderiza una vez cada 5 min y se sirve de caché el resto.
+// Antes era force-dynamic y ejecutaba stats + bloques + ORDER BY RANDOM() en
+// CADA visita (incluidos bots), saturando el CPU del VPS. El bloque "random"
+// ahora rota cada revalidación en lugar de en cada request.
 export const revalidate = 300
-export const dynamic = 'force-dynamic'
 
 export default function HomePage() {
   const stats = getStats()
