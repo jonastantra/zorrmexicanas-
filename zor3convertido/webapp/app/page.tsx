@@ -9,19 +9,27 @@ import {
   listPopularTags,
 } from '@/lib/posts'
 import { SEARCH_CONSOLE_TOPICS, SITE_CONFIG } from '@/lib/site'
+import { unstable_cache } from 'next/cache'
 
-// ISR: la home se renderiza una vez cada 5 min y se sirve de caché el resto.
-// Antes era force-dynamic y ejecutaba stats + bloques + ORDER BY RANDOM() en
-// CADA visita (incluidos bots), saturando el CPU del VPS. El bloque "random"
-// ahora rota cada revalidación en lugar de en cada request.
-export const revalidate = 300
+// Dinámica para que el build NO la prerenderice (la DB no existe en build time,
+// solo en el volumen /data en runtime). El CPU se cuida con unstable_cache:
+// las consultas a SQLite corren a lo sumo una vez cada 5 min, no en cada visita.
+export const dynamic = 'force-dynamic'
 
-export default function HomePage() {
-  const stats = getStats()
+const getHomeData = unstable_cache(
+  async () => ({
+    stats: getStats(),
+    featured: getFeatured(),
+    featuredCats: listFeaturedCategories(12),
+    popularTags: listPopularTags(40),
+  }),
+  ['home-data'],
+  { revalidate: 300 }
+)
+
+export default async function HomePage() {
+  const { stats, featured, featuredCats, popularTags } = await getHomeData()
   const pages = Math.max(1, Math.ceil(stats.posts / SITE_CONFIG.postsPerPage))
-  const featured = getFeatured()
-  const featuredCats = listFeaturedCategories(12)
-  const popularTags = listPopularTags(40)
   const faqJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
