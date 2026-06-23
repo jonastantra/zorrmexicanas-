@@ -6,6 +6,7 @@ import { listPosts } from '@/lib/posts'
 import { SITE_CONFIG } from '@/lib/site'
 
 export const revalidate = 300
+export const dynamic = 'force-static'
 
 export async function generateMetadata({ params }: { params: Promise<{ n: string }> }): Promise<Metadata> {
   const page = Math.max(1, parseInt((await params).n, 10) || 1)
