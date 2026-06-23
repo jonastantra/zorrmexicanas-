@@ -132,30 +132,22 @@ export const getPostBySlug = cache((slug: string): Post | null => {
  * old URL into the canonical one. Returns null if not a duplicate.
  */
 export function getCanonicalForSlug(slug: string): { id: number; slug: string } | null {
-  const dupRow = queryOne<{ id: number; post_date: string }>(
-    `SELECT p.id, p.post_date FROM posts p WHERE p.post_name = ? AND p.post_status='publish' AND p.post_type='post' LIMIT 1`,
-    [slug]
+  // Las redirecciones 301 (slug viejo/duplicado -> canónico) se sirven desde la
+  // tabla ligera `redirects`. Antes esto se resolvía en vivo recorriendo
+  // posts + post_duplicate_groups (millones de filas), lo que obligaba a
+  // conservar ~500k posts no-canónicos solo para los redirects.
+  const row = queryOne<{ target_url: string }>(
+    `SELECT target_url FROM redirects WHERE source_url = ? AND status_code = 301 LIMIT 1`,
+    ['/' + slug]
   )
-  if (!dupRow) return null
-  // Find canonical from any duplicate group this post belongs to
-  const groups = queryAll<{ group_id: number }>(
-    `SELECT DISTINCT group_id FROM post_duplicate_groups WHERE post_id = ? AND is_canonical = 0`,
-    [dupRow.id]
+  if (!row?.target_url) return null
+  const targetSlug = row.target_url.replace(/^\//, '')
+  if (!targetSlug || targetSlug === slug) return null
+  const canon = queryOne<{ id: number }>(
+    `SELECT id FROM posts WHERE post_name = ? AND post_status='publish' AND post_type='post' LIMIT 1`,
+    [targetSlug]
   )
-  if (groups.length === 0) return null  // not a duplicate; already canonical
-  const groupIds = groups.map(g => g.group_id)
-  const placeholders = groupIds.map(() => '?').join(',')
-  const best = queryOne<{ pid: number; slug: string; post_date: string }>(
-    `SELECT p.id AS pid, p.post_name AS slug, p.post_date
-     FROM post_duplicate_groups pdg
-     JOIN posts p ON p.id = pdg.post_id
-     WHERE pdg.is_canonical = 1
-       AND pdg.group_id IN (${placeholders})
-     ORDER BY p.post_date ASC, p.id ASC LIMIT 1`,
-    groupIds
-  )
-  if (!best || best.pid === dupRow.id) return null
-  return { id: best.pid, slug: best.slug }
+  return { id: canon?.id ?? 0, slug: targetSlug }
 }
 
 export function getPostById(id: number): Post | null {
