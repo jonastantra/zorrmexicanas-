@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { SITE_CONFIG } from '@/lib/site'
+import { SEARCH_CONSOLE_TOPICS, SITE_CONFIG } from '@/lib/site'
 import type { TermInfo } from '@/lib/posts'
 
 export default function Footer({ categories, tags }: { categories: TermInfo[]; tags: TermInfo[] }) {
@@ -33,9 +33,14 @@ export default function Footer({ categories, tags }: { categories: TermInfo[]; t
         </div>
 
         <div>
-          <h4>Etiquetas populares</h4>
+          <h4>Búsquedas de Google</h4>
           <ul>
-            {topTags.slice(0, 8).map(t => (
+            {SEARCH_CONSOLE_TOPICS.slice(0, 6).map(topic => (
+              <li key={topic.label}>
+                <Link href={topic.href}>{topic.label}</Link>
+              </li>
+            ))}
+            {topTags.slice(0, 4).map(t => (
               <li key={t.id}>
                 <Link href={`/etiqueta/${t.slug}`}>#{t.name}</Link>
               </li>

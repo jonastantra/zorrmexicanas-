@@ -11,8 +11,8 @@ export const dynamic = 'force-static'
 export async function generateMetadata({ params }: { params: Promise<{ n: string }> }): Promise<Metadata> {
   const page = Math.max(1, parseInt((await params).n, 10) || 1)
   return {
-    title: `Videos mexicanos recientes - Página ${page}`,
-    description: `Página ${page} del catálogo de videos mexicanos, amateur y latinos.`,
+    title: `Porno mexicano casero reciente - Página ${page}`,
+    description: `Página ${page} del catálogo de porno mexicano casero, videos amateur de mexicanas y contenido latino reciente.`,
     alternates: { canonical: page === 1 ? '/' : `/page/${page}` },
     robots: { index: page <= 100, follow: true },
   }
@@ -40,8 +40,8 @@ export default async function PaginatedHome({ params }: { params: Promise<{ n: s
   }
   return (
     <div>
-      <h1 className="page-title">Página {page}</h1>
-      <p className="page-subtitle">Videos más recientes</p>
+      <h1 className="page-title">Porno mexicano casero reciente - Página {page}</h1>
+      <p className="page-subtitle">Videos amateur, caseros y latinos más recientes</p>
       <div className="post-grid">
         {posts.map(p => <PostCard key={p.id} post={p} />)}
       </div>

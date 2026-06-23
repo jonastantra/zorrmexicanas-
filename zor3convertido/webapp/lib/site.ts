@@ -1,8 +1,8 @@
 export const SITE_CONFIG = {
   name: 'Zorritas Mexicanas',
   shortName: 'ZorritasMexicanas',
-  tagline: 'Porno Mexicano, Amateur y Más',
-  description: 'Videos porno gratis de mexicanas, amateur mexicano, latinas y más. Miles de videos actualizados diariamente.',
+  tagline: 'Porno mexicano casero, amateur y videos latinos',
+  description: 'Página de porno mexicano casero, videos amateur de mexicanas y contenido latino organizado por categorías, etiquetas, duración y tendencias.',
   baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
   // For redirect generation - old WP URL format was /YYYY/MM/slug
   postsPerPage: 24,
@@ -12,22 +12,31 @@ export const SITE_CONFIG = {
 
 export const CATEGORY_SEO_COPY: Record<string, { title: string; description: string }> = {
   'amateur-casero': {
-    title: 'Videos amateur y caseros',
-    description: 'Explora videos amateur y caseros organizados en una colección actualizada, con duración y contenidos relacionados.',
+    title: 'Porno casero mexicano y videos amateur',
+    description: 'Colección de porno casero mexicano, videos amateur y escenas latinas organizadas por fecha, duración, etiquetas y contenidos relacionados.',
   },
   'porno-mexicano': {
     title: 'Porno mexicano',
-    description: 'Colección de videos mexicanos organizada por popularidad y fecha, con páginas individuales y reproducción integrada.',
+    description: 'Página de porno mexicano con videos caseros, amateur y latinos organizados por popularidad, fecha, categorías y reproducción integrada.',
   },
   mexicanas: {
     title: 'Videos de mexicanas',
-    description: 'Videos de mexicanas y contenido amateur relacionado, clasificado para facilitar el descubrimiento de nuevas publicaciones.',
+    description: 'Videos de mexicanas, zorras mexicanas y contenido amateur relacionado, clasificado para facilitar el descubrimiento de nuevas publicaciones.',
   },
   colegialas: {
     title: 'Videos de colegialas',
     description: 'Colección temática para adultos organizada con etiquetas, duración, popularidad y contenidos relacionados.',
   },
 }
+
+export const SEARCH_CONSOLE_TOPICS = [
+  { label: 'porno casero mexicano', href: '/categoria/amateur-casero' },
+  { label: 'porno mexicano', href: '/categoria/porno-mexicano' },
+  { label: 'página porno mexicano', href: '/categoria/porno-mexicano' },
+  { label: 'zorras mexicanas', href: '/categoria/mexicanas' },
+  { label: 'videos de mexicanas', href: '/categoria/mexicanas' },
+  { label: 'cuckold real', href: '/buscar?q=cuckold+real' },
+]
 
 export type PostListItem = {
   id: number

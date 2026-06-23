@@ -8,7 +8,7 @@ import {
   listFeaturedCategories,
   listPopularTags,
 } from '@/lib/posts'
-import { SITE_CONFIG } from '@/lib/site'
+import { SEARCH_CONSOLE_TOPICS, SITE_CONFIG } from '@/lib/site'
 
 export const revalidate = 300
 export const dynamic = 'force-dynamic'
@@ -19,23 +19,59 @@ export default function HomePage() {
   const featured = getFeatured()
   const featuredCats = listFeaturedCategories(12)
   const popularTags = listPopularTags(40)
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: '¿Dónde encontrar porno casero mexicano en Zorritas Mexicanas?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'La categoría Amateur Casero reúne videos caseros mexicanos y contenido amateur latino con páginas individuales, miniaturas locales y videos relacionados.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: '¿Qué incluye la categoría Porno Mexicano?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Incluye videos mexicanos organizados por popularidad, fecha, categorías, etiquetas y duración para facilitar la navegación desde móvil o escritorio.',
+        },
+      },
+    ],
+  }
 
   return (
     <div>
       <header className="home-intro">
         <div>
-          <h1 className="page-title">Videos mexicanos y latinos</h1>
+          <h1 className="page-title">Porno mexicano casero y videos amateur latinos</h1>
           <p className="page-subtitle">
-            {stats.posts.toLocaleString()} videos · {stats.categories} categorías · {stats.tags.toLocaleString()} etiquetas
+            Página de porno mexicano con {stats.posts.toLocaleString()} videos, {stats.categories} categorías y {stats.tags.toLocaleString()} etiquetas: mexicanas, amateur casero, colegialas y tendencias latinas.
           </p>
         </div>
       </header>
 
       {featured ? <Hero post={featured} /> : null}
 
+      <section className="section seo-topic-section" aria-labelledby="search-console-topics">
+        <div className="section-head">
+          <h2 className="section-title" id="search-console-topics">Búsquedas populares</h2>
+          <span className="section-meta">Basado en consultas reales de Google Search Console</span>
+        </div>
+        <div className="topic-chip-row">
+          {SEARCH_CONSOLE_TOPICS.map(topic => (
+            <Link key={topic.label} href={topic.href}>
+              {topic.label}
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="section" aria-labelledby="featured-cats">
         <div className="section-head">
-          <h2 className="section-title" id="featured-cats">Categorías</h2>
+          <h2 className="section-title" id="featured-cats">Categorías de porno mexicano</h2>
         </div>
         <div className="cat-grid">
           {featuredCats.map(category => (
@@ -64,6 +100,11 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
     </div>
   )
 }

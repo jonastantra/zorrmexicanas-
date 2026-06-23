@@ -5,22 +5,24 @@ import Footer from '@/components/Footer'
 import AgeVerification from '@/components/AgeVerification'
 import CookieConsent from '@/components/CookieConsent'
 import { listCategories, listTags } from '@/lib/posts'
+import { SITE_CONFIG } from '@/lib/site'
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
 export const metadata: Metadata = {
-  title: { default: 'Videos mexicanos y latinos | Zorritas Mexicanas', template: '%s | Zorritas Mexicanas' },
-  description: 'Catálogo de videos mexicanos, amateur y latinos organizado por categorías, etiquetas y tendencias.',
+  title: { default: 'Porno mexicano casero y videos amateur | Zorritas Mexicanas', template: '%s | Zorritas Mexicanas' },
+  description: SITE_CONFIG.description,
   metadataBase: new URL(baseUrl),
   applicationName: 'Zorritas Mexicanas',
+  keywords: ['porno mexicano', 'porno casero mexicano', 'videos mexicanos', 'mexicanas amateur', 'zorras mexicanas', 'Zorritas Mexicanas'],
   category: 'video',
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     siteName: 'Zorritas Mexicanas',
     locale: 'es_MX',
-    title: 'Videos mexicanos y latinos | Zorritas Mexicanas',
-    description: 'Catálogo de videos mexicanos, amateur y latinos organizado por categorías y tendencias.',
+    title: 'Porno mexicano casero y videos amateur | Zorritas Mexicanas',
+    description: SITE_CONFIG.description,
   },
   twitter: { card: 'summary_large_image' },
   robots: {
@@ -48,6 +50,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'Zorritas Mexicanas',
+    alternateName: ['Zorras Mexicanas', 'Zorritas', 'ZorritasMexicanas'],
+    description: SITE_CONFIG.description,
     url: baseUrl,
     inLanguage: 'es-MX',
     isFamilyFriendly: false,
