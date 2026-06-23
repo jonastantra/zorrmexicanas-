@@ -10,7 +10,7 @@ import {
 export const dynamic = 'force-dynamic'
 
 interface SearchBody {
-  sourceId: SourceId
+  sourceId: SourceId | 'all'
   keywords?: string
   urls?: string[]
   page?: number
@@ -64,6 +64,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'keywords o urls requeridos' }, { status: 400 })
     }
     try {
+      if (body.sourceId === 'all' && body.urls?.length) {
+        return NextResponse.json(
+          { error: 'Para enlaces directos selecciona la fuente correspondiente' },
+          { status: 400 }
+        )
+      }
+      if (body.sourceId === 'all') {
+        const availableSources = listSources()
+        const settled = await Promise.allSettled(
+          availableSources.map(source => searchVideos({
+            sourceId: source.id,
+            keywords: body.keywords,
+            urls: body.urls,
+            page: body.page,
+            minDuration: body.minDuration,
+          }).then(videos => ({ source, videos })))
+        )
+        const videos = settled.flatMap(result =>
+          result.status === 'fulfilled' ? result.value.videos : []
+        )
+        const sources = settled.map((result, index) => ({
+          ...availableSources[index],
+          count: result.status === 'fulfilled' ? result.value.videos.length : 0,
+          error: result.status === 'rejected'
+            ? (result.reason instanceof Error ? result.reason.message : String(result.reason))
+            : undefined,
+        }))
+        return NextResponse.json({ count: videos.length, videos, sources })
+      }
       const videos = await searchVideos({
         sourceId: body.sourceId,
         keywords: body.keywords,
@@ -71,7 +100,11 @@ export async function POST(request: Request) {
         page: body.page,
         minDuration: body.minDuration,
       })
-      return NextResponse.json({ count: videos.length, videos })
+      return NextResponse.json({
+        count: videos.length,
+        videos,
+        sources: [{ id: body.sourceId, name: body.sourceId, count: videos.length }],
+      })
     } catch (err) {
       return NextResponse.json(
         { error: err instanceof Error ? err.message : String(err) },

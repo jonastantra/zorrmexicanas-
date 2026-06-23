@@ -10,32 +10,56 @@ export async function searchXvideos(params: SearchParams): Promise<VideoResult[]
 }
 
 function parseListing(html: string): VideoResult[] {
-  const blocks = html.split('class="thumb-block').slice(1)
+  const blocks = html.split(/class="[^"]*\bthumb-block\b[^"]*"/).slice(1)
   const out: VideoResult[] = []
-  for (const b of blocks) {
-    const id = extractBetween(b, 'id="video', '"')
+  for (const block of blocks) {
+    const id =
+      extractBetween(block, 'data-videoid="', '"') ??
+      extractBetween(block, 'data-id="', '"') ??
+      extractBetween(block, 'id="video_', '"')
     if (!id) continue
-    const title = unescapeHtml(extractBetween(b, 'title="', '"') ?? '')
+
+    const titleBlock = extractBetween(block, '<p class="title">', '</p>') ?? block
+    const title = unescapeHtml(extractBetween(titleBlock, 'title="', '"') ?? '').trim()
     if (!title) continue
-    const vlink = `https://www.xvideos.com${extractBetween(b, 'href="', '"') ?? ''}`
-    let thumb = extractBetween(b, 'data-src="', '"')
-    if (!thumb) thumb = extractBetween(b, 'src="', '"')
-    if (thumb) {
-      thumb = thumb.replace('thumbs169ll', 'thumbsl').replace('THUMBNUM', String(Math.floor(Math.random() * 28) + 2))
-    }
-    const durRaw = extractBetween(b, 'class="duration"', '</span>') ?? ''
-    const duration = parseDuration(stripTags(durRaw))
-    const embedUrl = `https://flashservice.xvideos.com/embedframe/${id}`
+
+    const href =
+      extractBetween(titleBlock, 'href="', '"') ??
+      extractBetween(block, '<div class="thumb"><a href="', '"') ??
+      ''
+    if (!href) continue
+
+    const thumbnail = (
+      extractBetween(block, 'data-src="', '"') ??
+      extractBetween(block, 'data-sfwthumb="', '"') ??
+      extractBetween(block, 'src="', '"') ??
+      ''
+    ).replace(/&amp;/g, '&')
+    const durationText =
+      extractBetween(titleBlock, '<span class="duration">', '</span>') ??
+      extractBetween(block, '<span class="duration">', '</span>') ??
+      ''
+
     out.push({
       sourceId: 'xvideos',
       videoId: id,
-      url: vlink,
+      url: href.startsWith('http') ? href : `https://www.xvideos.com${href}`,
       title,
-      duration,
-      thumbnail: thumb ?? '',
-      embedUrl,
+      duration: parseDuration(stripTags(durationText)),
+      thumbnail,
+      embedUrl: `https://www.xvideos.com/embedframe/${id}`,
       tags: titleToTags(title),
     })
   }
-  return out
+  return deduplicate(out)
+}
+
+function deduplicate(videos: VideoResult[]): VideoResult[] {
+  const seen = new Set<string>()
+  return videos.filter(video => {
+    const key = `${video.sourceId}:${video.videoId}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }

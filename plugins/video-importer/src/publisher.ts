@@ -172,6 +172,12 @@ export class Publisher {
         this.db.prepare(
           `UPDATE term_taxonomy SET count = count + 1 WHERE tt_id=?`
         ).run(ttId)
+        if (opts.addToCanonical ?? status === 'publish') {
+          this.db.prepare(
+            `INSERT INTO canonical_term_counts(tt_id, count) VALUES(?, 1)
+             ON CONFLICT(tt_id) DO UPDATE SET count=count+1`
+          ).run(ttId)
+        }
       }
 
       const tagSlugs = opts.tagSlugs ?? video.tags
@@ -184,6 +190,12 @@ export class Publisher {
         this.db.prepare(
           `UPDATE term_taxonomy SET count = count + 1 WHERE tt_id=?`
         ).run(ttId)
+        if (opts.addToCanonical ?? status === 'publish') {
+          this.db.prepare(
+            `INSERT INTO canonical_term_counts(tt_id, count) VALUES(?, 1)
+             ON CONFLICT(tt_id) DO UPDATE SET count=count+1`
+          ).run(ttId)
+        }
       }
     })()
 

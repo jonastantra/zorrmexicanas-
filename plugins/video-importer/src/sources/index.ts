@@ -4,6 +4,7 @@ import { searchPornhub } from './pornhub.js'
 import { searchRedtube } from './redtube.js'
 import { searchXhamster } from './xhamster.js'
 import { searchYouporn } from './youporn.js'
+import { inspectVideoUrls } from './direct.js'
 
 const adapters: Record<SourceId, (p: SearchParams) => Promise<VideoResult[]>> = {
   xvideos: searchXvideos,
@@ -40,6 +41,9 @@ export function listSources(): { id: SourceId; name: string }[] {
 }
 
 export async function searchVideos(params: SearchParams): Promise<VideoResult[]> {
+  if (params.urls?.length) {
+    return inspectVideoUrls(params.sourceId, params.urls)
+  }
   const adapter = getSourceAdapter(params.sourceId)
   return adapter.search(params)
 }

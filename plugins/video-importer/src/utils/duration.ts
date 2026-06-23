@@ -10,7 +10,7 @@ export function parseDuration(raw: string): number {
   if (parts.length === 2 && !parts.some(isNaN)) {
     return parts[0]
   }
-  const secs = clean.match(/(\d+)\s*sec/)
+  const secs = clean.match(/(\d+)\s*(?:sec|seg)/)
   if (secs) return Math.max(1, Math.floor(parseInt(secs[1], 10) / 60))
   const hrs = clean.match(/(\d+)\s*(?:hr|hour|h)/)
   if (hrs) return parseInt(hrs[1], 10) * 60

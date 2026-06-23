@@ -26,8 +26,9 @@ interface Props {
 }
 
 export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
-  const [sourceId, setSourceId] = useState<SourceId>('xvideos')
+  const [sourceId, setSourceId] = useState<SourceId | 'all'>('all')
   const [keywords, setKeywords] = useState('')
+  const [urls, setUrls] = useState('')
   const [page, setPage] = useState(1)
   const [minDuration, setMinDuration] = useState(0)
   const [videos, setVideos] = useState<VideoResult[]>([])
@@ -39,8 +40,10 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
   const [status, setStatus] = useState<'publish' | 'draft'>('draft')
   const [category, setCategory] = useState('')
   const [downloadThumb, setDownloadThumb] = useState(true)
+  const [sourceReport, setSourceReport] = useState<Array<{ id: string; name: string; count: number; error?: string }>>([])
 
-  const sources: { id: SourceId; name: string }[] = [
+  const sources: { id: SourceId | 'all'; name: string }[] = [
+    { id: 'all', name: 'Todas las fuentes' },
     { id: 'xvideos', name: 'XVideos' },
     { id: 'pornhub', name: 'PornHub' },
     { id: 'redtube', name: 'RedTube' },
@@ -49,8 +52,9 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
   ]
 
   const search = useCallback(async () => {
-    if (!keywords.trim()) {
-      setError('Ingresa palabras clave')
+    const urlList = urls.split(/\r?\n/).map(url => url.trim()).filter(Boolean)
+    if (!keywords.trim() && urlList.length === 0) {
+      setError('Ingresa palabras clave o pega enlaces directos')
       return
     }
     setLoading(true)
@@ -60,19 +64,21 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
       const res = await fetch(`${apiBase}?action=search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId, keywords, page, minDuration }),
+        body: JSON.stringify({ sourceId, keywords: keywords.trim() || undefined, urls: urlList, page, minDuration }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error en búsqueda')
       setVideos(data.videos || [])
+      setSourceReport(data.sources || [])
       setSelected(new Set(data.videos?.map((_: VideoResult, i: number) => i) ?? []))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setVideos([])
+      setSourceReport([])
     } finally {
       setLoading(false)
     }
-  }, [apiBase, sourceId, keywords, page, minDuration])
+  }, [apiBase, sourceId, keywords, urls, page, minDuration])
 
   const importSelected = useCallback(async () => {
     const toImport = videos.filter((_, i) => selected.has(i))
@@ -125,7 +131,7 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
         <div className="form-row">
           <label>
             Fuente:
-            <select value={sourceId} onChange={(e) => setSourceId(e.target.value as SourceId)}>
+            <select value={sourceId} onChange={(e) => setSourceId(e.target.value as SourceId | 'all')}>
               {sources.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -139,6 +145,15 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
               onChange={(e) => setKeywords(e.target.value)}
               placeholder="mexicana, casero, amateur..."
               onKeyDown={(e) => e.key === 'Enter' && search()}
+            />
+          </label>
+          <label className="url-input">
+            Enlaces directos (uno por línea):
+            <textarea
+              value={urls}
+              onChange={(e) => setUrls(e.target.value)}
+              placeholder="https://www.xvideos.com/video..."
+              rows={3}
             />
           </label>
           <label>
@@ -156,6 +171,16 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
       </section>
 
       {error && <div className="error">{error}</div>}
+
+      {sourceReport.length > 0 && (
+        <div className="source-report">
+          {sourceReport.map((source) => (
+            <span key={source.id} className={source.error ? 'source-error' : ''}>
+              {source.name}: {source.error ? source.error : `${source.count} resultados`}
+            </span>
+          ))}
+        </div>
+      )}
 
       {videos.length > 0 && (
         <section className="results-panel">

@@ -63,6 +63,12 @@ export function unescapeHtml(s: string): string {
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&comma;/g, ',')
+    .replace(/&period;/g, '.')
+    .replace(/&colon;/g, ':')
+    .replace(/&sol;/g, '/')
+    .replace(/&#(\d+);/g, (_match, code) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_match, code) => String.fromCodePoint(parseInt(code, 16)))
     .replace(/\\"/g, '"')
     .replace(/\\'/g, "'")
 }
