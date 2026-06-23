@@ -17,11 +17,23 @@ export default function VideoActions({
   const [voted, setVoted] = useState('')
 
   useEffect(() => {
-    fetch(`/api/posts/${postId}/metrics`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'view' }),
-    }).then(r => r.json()).then(setMetrics).catch(() => {})
+    const recordView = () => {
+      fetch(`/api/posts/${postId}/metrics`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'view' }),
+      }).then(r => r.json()).then(setMetrics).catch(() => {})
+    }
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    if (idleWindow.requestIdleCallback) {
+      const id = idleWindow.requestIdleCallback(recordView, { timeout: 3000 })
+      return () => idleWindow.cancelIdleCallback?.(id)
+    }
+    const id = window.setTimeout(recordView, 1500)
+    return () => window.clearTimeout(id)
   }, [postId])
 
   async function act(action: 'like' | 'dislike' | 'share') {

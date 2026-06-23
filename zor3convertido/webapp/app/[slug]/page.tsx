@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import PostCard from '@/components/PostCard'
 import ShareButton from '@/components/ShareButton'
 import VideoActions from '@/components/VideoActions'
+import LazyVideoEmbed from '@/components/LazyVideoEmbed'
 import AdSlot from '@/components/AdSlot'
 import { getPostBySlug, getCanonicalForSlug, listRelated } from '@/lib/posts'
 import { SITE_CONFIG } from '@/lib/site'
@@ -160,17 +161,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         </div>
 
         {embedSrc && (
-          <div className="video-frame">
-            <iframe
-              src={embedSrc}
-              title={post.title}
-              loading="lazy"
-              allow="autoplay; encrypted-media; fullscreen"
-              allowFullScreen
-              referrerPolicy="no-referrer"
-              sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-            />
-          </div>
+          <LazyVideoEmbed src={embedSrc} title={post.title} poster={post.thumb} />
         )}
 
         <VideoActions postId={post.id} title={post.title} initial={metrics} />
