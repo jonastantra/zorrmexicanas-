@@ -1,16 +1,12 @@
-'use client'
-
 import Link from 'next/link'
-import { useState } from 'react'
 import { SITE_CONFIG } from '@/lib/site'
 import type { TermInfo } from '@/lib/posts'
 
 export default function Header({ categories }: { categories: TermInfo[] }) {
-  const [mobileOpen, setMobileOpen] = useState(false)
   const topCats = categories.slice(0, 7)
 
   return (
-    <>
+    <details className="mobile-navigation">
       <header className="site-header">
         <div className="site-header-inner">
           <Link href="/" className="brand" aria-label={SITE_CONFIG.name}>
@@ -19,8 +15,8 @@ export default function Header({ categories }: { categories: TermInfo[] }) {
           </Link>
 
           <nav className="site-nav" aria-label="Categorías principales">
-            {topCats.map(c => (
-              <Link key={c.id} href={`/categoria/${c.slug}`}>{c.name}</Link>
+            {topCats.map(category => (
+              <Link key={category.id} href={`/categoria/${category.slug}`}>{category.name}</Link>
             ))}
           </nav>
 
@@ -29,26 +25,18 @@ export default function Header({ categories }: { categories: TermInfo[] }) {
             <button type="submit">Buscar</button>
           </form>
 
-          <button
-            type="button"
-            className="menu-toggle"
-            aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen(open => !open)}
-          >
-            {mobileOpen ? 'Cerrar' : 'Menú'}
-          </button>
+          <summary className="menu-toggle" aria-label="Abrir menú">Menú</summary>
         </div>
       </header>
 
-      <nav className={`mobile-menu ${mobileOpen ? 'open' : ''}`} aria-label="Categorías móviles">
-        {categories.map(c => (
-          <Link key={c.id} href={`/categoria/${c.slug}`} onClick={() => setMobileOpen(false)}>
-            {c.name}
-            <span>{c.count.toLocaleString()}</span>
+      <nav className="mobile-menu" aria-label="Categorías móviles">
+        {categories.map(category => (
+          <Link key={category.id} href={`/categoria/${category.slug}`}>
+            {category.name}
+            <span>{category.count.toLocaleString()}</span>
           </Link>
         ))}
       </nav>
-    </>
+    </details>
   )
 }

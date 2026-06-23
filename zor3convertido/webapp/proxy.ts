@@ -28,7 +28,7 @@ const REDIRECT_MAP: Map<string, { dest: string; status: number }> = new Map(
   REDIRECTS.map(r => [r.source, { dest: r.destination, status: r.statusCode || 301 }])
 )
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // Protect the administration area with HTTP Basic Auth. EasyPanel can

@@ -210,7 +210,10 @@ button { cursor: pointer; border: 0; background: none; }
   justify-content: center;
   border-radius: var(--radius-sm);
   color: var(--text);
+  cursor: pointer;
+  list-style: none;
 }
+.menu-toggle::-webkit-details-marker { display: none; }
 .menu-toggle:hover { background: var(--bg-card); }
 
 @media (max-width: 900px) {
@@ -236,7 +239,7 @@ button { cursor: pointer; border: 0; background: none; }
   padding: 20px 16px;
   overflow-y: auto;
 }
-.mobile-menu.open { display: block; }
+.mobile-navigation[open] .mobile-menu { display: block; }
 .mobile-menu a {
   display: block;
   padding: 14px 12px;
