@@ -97,7 +97,7 @@ export default function AutoImportPanel({ apiBase }: { apiBase: string }) {
       } else if (typeof json.message === 'string') {
         notify(json.message)
       } else {
-        const parts = ['queued', 'rewritten', 'scheduled', 'published', 'failed', 'removed', 'restored', 'repaired']
+        const parts = ['queued', 'rewritten', 'scheduled', 'published', 'failed', 'removed', 'restored', 'repaired', 'promoted']
           .filter(k => typeof json[k] === 'number')
           .map(k => `${k}: ${json[k]}`)
         notify(parts.length ? parts.join(' · ') : 'Listo')
@@ -134,6 +134,7 @@ export default function AutoImportPanel({ apiBase }: { apiBase: string }) {
         <button disabled={!!busy} onClick={() => call('schedule', { limit: 50 })}>🗓️ Programar 50</button>
         <button disabled={!!busy} onClick={() => call('publish-due')}>🚀 Publicar vencidos</button>
         <button disabled={!!busy} className="accent" onClick={() => call('full-cycle')}>♻️ Ciclo completo</button>
+        <button disabled={!!busy} onClick={() => call('revalidate')}>✅ Revalidar revisión</button>
         <button disabled={!!busy} onClick={() => call('retry-failed')}>↻ Reintentar fallidos</button>
         <button disabled={!!busy} onClick={() => { if (confirm('¿Eliminar fallidos y saltados?')) call('clear-failed') }}>🧹 Limpiar fallidos</button>
         <button disabled={!!busy} onClick={() => { if (confirm('Reescribe títulos/descripciones de posts viejos con la IA. ¿Continuar?')) call('repair', { limit: 20 }) }}>🛠️ Reparar posts viejos</button>

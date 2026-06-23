@@ -551,6 +551,29 @@ export function clearFailed(): number {
   return info.changes
 }
 
+/** Re-valida los needs_review con las reglas actuales y promueve los que ya pasan
+ *  (sin volver a llamar a la IA: reutiliza el ai_title/ai_description guardado). */
+export function revalidateReview(): number {
+  const rows = db().prepare(
+    `SELECT id, ai_title, ai_description FROM auto_import_queue
+     WHERE status='needs_review' AND ai_title IS NOT NULL AND ai_description IS NOT NULL`
+  ).all() as Array<{ id: number; ai_title: string; ai_description: string }>
+  const upd = db().prepare(`
+    UPDATE auto_import_queue SET status='rewritten', error_message=NULL, quality_score=100, updated_at=datetime('now')
+    WHERE id=?
+  `)
+  let promoted = 0
+  db().transaction(() => {
+    for (const r of rows) {
+      if (checkTitle(r.ai_title).ok && checkDescription(r.ai_description).ok) {
+        upd.run(r.id)
+        promoted++
+      }
+    }
+  })()
+  return promoted
+}
+
 export function retryFailed(): number {
   const info = db().prepare(`
     UPDATE auto_import_queue SET status='rewritten', error_message=NULL, scheduled_at=NULL, updated_at=datetime('now')

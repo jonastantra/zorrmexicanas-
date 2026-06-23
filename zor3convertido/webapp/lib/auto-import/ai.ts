@@ -55,7 +55,7 @@ export async function rewriteEditorial(
               source: input.source,
               tags: input.tags ?? [],
               durationMinutes: input.durationMinutes ?? 0,
-              requiredJson: { title: 'string 55-90 chars', description: 'string 340-400 chars' },
+              requiredJson: { title: 'string 55-90 chars', description: 'string 230-320 chars' },
             }),
           },
         ],

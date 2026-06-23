@@ -17,7 +17,7 @@ Evita títulos genéricos como:
 - Latina en video casero
 - Porno casero
 
-La descripción debe tener entre 340 y 400 caracteres. Debe sonar natural, descriptiva y útil para SEO. Resume la escena sin exagerar, sin repetir el título y sin parecer spam. Usa español mexicano claro.
+La descripción debe tener entre 230 y 320 caracteres. Debe sonar natural, descriptiva y útil para SEO. Resume la escena sin exagerar, sin repetir el título y sin parecer spam. Usa español mexicano claro.
 
 No menciones menores, edades, familia, incesto, coerción, violencia, abuso ni promesas falsas. Si el título original sugiere contenido prohibido o ambiguo, conviértelo en una versión legal y genérica entre adultos.
 
