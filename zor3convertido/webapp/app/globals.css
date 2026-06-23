@@ -950,6 +950,7 @@ button { cursor: pointer; border: 0; background: none; }
   padding: 20px;
   animation: fadeIn var(--dur) var(--ease);
 }
+.age-verified .age-modal-backdrop { display: none; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .age-modal {
   background: var(--bg-card);

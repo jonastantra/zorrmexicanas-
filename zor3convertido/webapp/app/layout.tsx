@@ -47,6 +47,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="es-MX">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var c=document.cookie.indexOf('zm_age_verified=1')!==-1;var l=localStorage.getItem('zm_age_verified')==='1';if(c||l)document.documentElement.classList.add('age-verified')}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <AgeVerification />
         <Header categories={categories} />

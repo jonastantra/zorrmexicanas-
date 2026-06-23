@@ -6,7 +6,9 @@ const STORAGE_KEY = 'zm_age_verified'
 const COOKIE_KEY = 'zm_age_verified'
 
 export default function AgeVerification() {
-  const [visible, setVisible] = useState(false)
+  // Render the gate in the initial HTML so it can paint immediately. A tiny
+  // head script adds `age-verified` before first paint for returning visitors.
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     // Check both localStorage and cookie (cookie works across subdomains / strict storage)
@@ -14,12 +16,13 @@ export default function AgeVerification() {
       window.localStorage.getItem(STORAGE_KEY) === '1' ||
       document.cookie.split('; ').some(c => c.startsWith(`${COOKIE_KEY}=1`))
     )
-    if (!fromStorage) setVisible(true)
+    setVisible(!fromStorage)
   }, [])
 
   function accept() {
     try { window.localStorage.setItem(STORAGE_KEY, '1') } catch {}
     document.cookie = `${COOKIE_KEY}=1; max-age=${60 * 60 * 24 * 30}; path=/; SameSite=Lax`
+    document.documentElement.classList.add('age-verified')
     window.dispatchEvent(new Event('age-verified'))
     setVisible(false)
   }
