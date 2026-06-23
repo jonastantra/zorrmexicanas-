@@ -11,6 +11,7 @@ import {
 import { SITE_CONFIG } from '@/lib/site'
 
 export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export default function HomePage() {
   const stats = getStats()
