@@ -17,6 +17,10 @@ zorritasmexicanascom.WordPress.2026-06-18.xml
 zor3convertido/webapp/.env.production
 zor3convertido/webapp/.next/
 zor3convertido/webapp/node_modules/
+plugins/video-importer/node_modules/
+plugins/video-importer/dist/
+plugins/video-importer/video-importer.profiles.json
+plugins/video-importer/exports/
 _migration_workspace/prod-*.log
 
 # Datos y medios locales: se conservan, pero se suben al volumen persistente,

@@ -1,0 +1,67 @@
+{
+  "name": "@zorritas/video-importer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Buscador e importador de videos para sitios Next.js + SQLite. Adapta los plugins de WordPress (Ken Importer, WPS Mass Embedder, XVideos Importer Pro) al stack actual.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./admin": {
+      "types": "./dist/admin/route.d.ts",
+      "import": "./dist/admin/route.js",
+      "default": "./dist/admin/route.js"
+    },
+    "./admin/VideoImporter": {
+      "types": "./dist/admin/VideoImporter.d.ts",
+      "import": "./dist/admin/VideoImporter.js",
+      "default": "./dist/admin/VideoImporter.js"
+    },
+    "./admin/video-importer.css": "./src/admin/video-importer.css"
+    ,
+    "./studio": {
+      "types": "./dist/studio/server.d.ts",
+      "import": "./dist/studio/server.js",
+      "default": "./dist/studio/server.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/admin/video-importer.css",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "cli": "tsx src/cli.ts",
+    "studio": "npm run build && node dist/studio/server.js",
+    "start": "node dist/studio/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1"
+  },
+  "peerDependencies": {
+    "next": ">=15",
+    "react": ">=19"
+  },
+  "peerDependenciesMeta": {
+    "next": { "optional": true },
+    "react": { "optional": true }
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "next": "^16.2.9",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^5.7.0"
+  }
+}

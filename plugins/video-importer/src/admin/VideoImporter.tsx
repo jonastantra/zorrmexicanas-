@@ -1,0 +1,270 @@
+'use client'
+import { useState, useCallback } from 'react'
+import type { SourceId, VideoResult } from '../types.js'
+
+interface ImportedVideo {
+  postId: number
+  slug: string
+  title: string
+  status: 'created' | 'duplicate'
+  thumbnailDownloaded?: boolean
+}
+
+interface ImportBatchResult {
+  imported: ImportedVideo[]
+  errors: { videoId: string; title: string; error: string }[]
+}
+
+interface ImportOptions {
+  categorySlug?: string
+  postStatus?: 'publish' | 'draft'
+  downloadThumbnail?: boolean
+}
+
+interface Props {
+  apiBase?: string
+}
+
+export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
+  const [sourceId, setSourceId] = useState<SourceId>('xvideos')
+  const [keywords, setKeywords] = useState('')
+  const [page, setPage] = useState(1)
+  const [minDuration, setMinDuration] = useState(0)
+  const [videos, setVideos] = useState<VideoResult[]>([])
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [loading, setLoading] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [results, setResults] = useState<ImportBatchResult | null>(null)
+  const [error, setError] = useState('')
+  const [status, setStatus] = useState<'publish' | 'draft'>('draft')
+  const [category, setCategory] = useState('')
+  const [downloadThumb, setDownloadThumb] = useState(true)
+
+  const sources: { id: SourceId; name: string }[] = [
+    { id: 'xvideos', name: 'XVideos' },
+    { id: 'pornhub', name: 'PornHub' },
+    { id: 'redtube', name: 'RedTube' },
+    { id: 'xhamster', name: 'xHamster' },
+    { id: 'youporn', name: 'YouPorn' },
+  ]
+
+  const search = useCallback(async () => {
+    if (!keywords.trim()) {
+      setError('Ingresa palabras clave')
+      return
+    }
+    setLoading(true)
+    setError('')
+    setResults(null)
+    try {
+      const res = await fetch(`${apiBase}?action=search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId, keywords, page, minDuration }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error en búsqueda')
+      setVideos(data.videos || [])
+      setSelected(new Set(data.videos?.map((_: VideoResult, i: number) => i) ?? []))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+      setVideos([])
+    } finally {
+      setLoading(false)
+    }
+  }, [apiBase, sourceId, keywords, page, minDuration])
+
+  const importSelected = useCallback(async () => {
+    const toImport = videos.filter((_, i) => selected.has(i))
+    if (toImport.length === 0) {
+      setError('Selecciona al menos un video')
+      return
+    }
+    setImporting(true)
+    setError('')
+    setResults(null)
+    try {
+      const options: ImportOptions = {
+        postStatus: status,
+        categorySlug: category.trim() || undefined,
+        downloadThumbnail: downloadThumb,
+      }
+      const res = await fetch(`${apiBase}?action=import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videos: toImport, options }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error al importar')
+      setResults(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setImporting(false)
+    }
+  }, [apiBase, videos, selected, status, category, downloadThumb])
+
+  const toggle = (i: number) => {
+    const next = new Set(selected)
+    if (next.has(i)) next.delete(i)
+    else next.add(i)
+    setSelected(next)
+  }
+
+  const toggleAll = () => {
+    if (selected.size === videos.length) setSelected(new Set())
+    else setSelected(new Set(videos.map((_, i) => i)))
+  }
+
+  return (
+    <div className="video-importer">
+      <h1>Importador de Videos</h1>
+
+      <section className="search-panel">
+        <h2>Buscar videos</h2>
+        <div className="form-row">
+          <label>
+            Fuente:
+            <select value={sourceId} onChange={(e) => setSourceId(e.target.value as SourceId)}>
+              {sources.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Palabras clave:
+            <input
+              type="text"
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              placeholder="mexicana, casero, amateur..."
+              onKeyDown={(e) => e.key === 'Enter' && search()}
+            />
+          </label>
+          <label>
+            Página:
+            <input type="number" min={1} value={page} onChange={(e) => setPage(Math.max(1, +e.target.value))} />
+          </label>
+          <label>
+            Duración mín (min):
+            <input type="number" min={0} value={minDuration} onChange={(e) => setMinDuration(Math.max(0, +e.target.value))} />
+          </label>
+          <button onClick={search} disabled={loading}>
+            {loading ? 'Buscando...' : 'Buscar'}
+          </button>
+        </div>
+      </section>
+
+      {error && <div className="error">{error}</div>}
+
+      {videos.length > 0 && (
+        <section className="results-panel">
+          <div className="results-header">
+            <h2>{videos.length} videos encontrados ({selected.size} seleccionados)</h2>
+            <div className="import-options">
+              <label>
+                Estado:
+                <select value={status} onChange={(e) => setStatus(e.target.value as 'publish' | 'draft')}>
+                  <option value="draft">Borrador</option>
+                  <option value="publish">Publicado</option>
+                </select>
+              </label>
+              <label>
+                Categoría (slug):
+                <input type="text" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="amateur-mexicano" />
+              </label>
+              <label>
+                <input type="checkbox" checked={downloadThumb} onChange={(e) => setDownloadThumb(e.target.checked)} />
+                Descargar miniatura
+              </label>
+              <button onClick={importSelected} disabled={importing}>
+                {importing ? 'Importando...' : `Importar ${selected.size}`}
+              </button>
+            </div>
+          </div>
+
+          <table className="results-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={selected.size === videos.length} onChange={toggleAll} /></th>
+                <th>Miniatura</th>
+                <th>Título</th>
+                <th>Duración</th>
+                <th>Fuente</th>
+              </tr>
+            </thead>
+            <tbody>
+              {videos.map((v, i) => (
+                <tr key={`${v.sourceId}-${v.videoId}`} className={selected.has(i) ? 'selected' : ''}>
+                  <td>
+                    <input type="checkbox" checked={selected.has(i)} onChange={() => toggle(i)} />
+                  </td>
+                  <td>
+                    {v.thumbnail ? (
+                      <img src={v.thumbnail} alt={v.title} width="120" loading="lazy" />
+                    ) : (
+                      <span className="no-thumb">Sin miniatura</span>
+                    )}
+                  </td>
+                  <td className="title-cell">
+                    <a href={v.url} target="_blank" rel="noopener noreferrer">{v.title}</a>
+                    <div className="tags">{v.tags.slice(0, 6).join(', ')}</div>
+                  </td>
+                  <td>{v.duration ? `${v.duration} min` : '-'}</td>
+                  <td className="source-badge">{v.sourceId}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {results && (
+        <section className="import-results">
+          <h2>Resultados de importación</h2>
+          <p className="summary">
+            Importados: {results.imported.length} |
+            Errores: {results.errors.length}
+          </p>
+          {results.imported.length > 0 && (
+            <table className="results-table">
+              <thead>
+                <tr><th>ID</th><th>Título</th><th>Slug</th><th>Estado</th><th>Miniatura</th></tr>
+              </thead>
+              <tbody>
+                {results.imported.map((r) => (
+                  <tr key={r.postId} className={r.status}>
+                    <td>{r.postId}</td>
+                    <td>{r.title}</td>
+                    <td><code>/{r.slug}</code></td>
+                    <td>
+                      {r.status === 'duplicate' ? '⚠ Duplicado' : '✓ Creado'}
+                      {r.thumbnailDownloaded && ' 📷'}
+                    </td>
+                    <td>
+                      {r.status === 'created' ? (
+                        <a href={`/${r.slug}`} target="_blank" rel="noopener noreferrer">Ver</a>
+                      ) : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {results.errors.length > 0 && (
+            <div className="errors">
+              <h3>Errores</h3>
+              <ul>
+                {results.errors.map((e, i) => (
+                  <li key={i}><strong>{e.title}</strong> ({e.videoId}): {e.error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  )
+}
+
+export default VideoImporter

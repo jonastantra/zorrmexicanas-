@@ -1,0 +1,8 @@
+node_modules
+dist
+test
+*.log
+video-importer.profiles.json
+exports
+.git
+.env*

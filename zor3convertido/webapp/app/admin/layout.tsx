@@ -29,6 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link href="/admin/settings" style={{ color: '#ccc', textDecoration: 'none' }}>Publicidad</Link>
             <Link href="/admin/blocks" style={{ color: '#ccc', textDecoration: 'none' }}>Portada</Link>
             <Link href="/admin/videos" style={{ color: '#ccc', textDecoration: 'none' }}>Videos</Link>
+            <Link href="/admin/importer" style={{ color: '#ccc', textDecoration: 'none' }}>Importar</Link>
           </div>
         </nav>
         <main style={{ padding: '20px' }}>
