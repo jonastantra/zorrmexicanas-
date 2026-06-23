@@ -65,18 +65,92 @@ export class Publisher {
   }
 
   annotateExisting(videos: VideoResult[]): VideoResult[] {
+    if (videos.length === 0) return videos
+
+    const matches = new Map<string, { postId: number; reason: string }>()
+    const addMatch = (key: string, postId: number, reason: string) => {
+      if (key && !matches.has(key)) matches.set(key, { postId, reason })
+    }
+
+    const sourcePairs = videos
+      .filter(video => video.sourceId && video.videoId)
+      .map(video => [video.sourceId, video.videoId] as const)
+    if (sourcePairs.length > 0) {
+      const pairWhere = sourcePairs.map(() => `(?, ?)`).join(', ')
+      const rows = this.db.prepare(
+        `SELECT source.meta_value AS source_id, video.meta_value AS video_id, source.post_id
+         FROM post_metadata source
+         JOIN post_metadata video ON video.post_id=source.post_id
+         WHERE source.meta_key='video_source'
+           AND video.meta_key='videoid'
+           AND (source.meta_value, video.meta_value) IN (${pairWhere})`
+      ).all(...sourcePairs.flat()) as Array<{ source_id: string; video_id: string; post_id: number }>
+      for (const row of rows) {
+        addMatch(`source:${row.source_id}:${row.video_id}`, row.post_id, 'Ya existe por fuente/videoid')
+      }
+    }
+
+    const embedKeys = Array.from(new Set(videos.flatMap(video => [
+      normalizeUrl(video.embedUrl),
+      normalizeUrl(video.url),
+      video.embedUrl,
+      video.url,
+    ].filter(Boolean))))
+    if (embedKeys.length > 0) {
+      const placeholders = embedKeys.map(() => '?').join(',')
+      const videoIds = Array.from(new Set(videos.map(video => video.videoId).filter(Boolean)))
+      const videoIdPlaceholders = videoIds.map(() => '?').join(',')
+      const rows = this.db.prepare(
+        `SELECT post_id, normalized_url, external_id
+         FROM embeds
+         WHERE normalized_url IN (${placeholders})
+            ${videoIds.length > 0 ? `OR external_id IN (${videoIdPlaceholders})` : ''}`
+      ).all(...embedKeys, ...videoIds) as Array<{ post_id: number; normalized_url: string; external_id: string }>
+      for (const row of rows) {
+        addMatch(`embed:${row.normalized_url}`, row.post_id, 'Ya existe por embed')
+        addMatch(`external:${row.external_id}`, row.post_id, 'Ya existe por id externo')
+      }
+
+      const metaRows = this.db.prepare(
+        `SELECT post_id, meta_value
+         FROM post_metadata
+         WHERE meta_key IN ('link', 'embed', 'thumb')
+           AND meta_value IN (${placeholders})`
+      ).all(...embedKeys) as Array<{ post_id: number; meta_value: string }>
+      for (const row of metaRows) {
+        addMatch(`meta:${row.meta_value}`, row.post_id, 'Ya existe por link/meta')
+        addMatch(`meta:${normalizeUrl(row.meta_value)}`, row.post_id, 'Ya existe por link/meta')
+      }
+    }
+
+    const matchedPostIds = Array.from(new Set([...matches.values()].map(match => match.postId)))
+    const slugs = new Map<number, string>()
+    if (matchedPostIds.length > 0) {
+      const placeholders = matchedPostIds.map(() => '?').join(',')
+      const rows = this.db.prepare(
+        `SELECT id, post_name FROM posts WHERE id IN (${placeholders})`
+      ).all(...matchedPostIds) as Array<{ id: number; post_name: string }>
+      for (const row of rows) slugs.set(row.id, row.post_name)
+    }
+
     return videos.map((video) => {
-      const postId = this.findExisting(video)
-      if (!postId) return video
-      const row = this.db.prepare(`SELECT post_name FROM posts WHERE id=?`).get(postId) as
-        | { post_name: string }
-        | undefined
+      const keys = [
+        `source:${video.sourceId}:${video.videoId}`,
+        `embed:${normalizeUrl(video.embedUrl)}`,
+        `external:${video.videoId}`,
+        `meta:${video.url}`,
+        `meta:${normalizeUrl(video.url)}`,
+        `meta:${video.embedUrl}`,
+        `meta:${normalizeUrl(video.embedUrl)}`,
+      ]
+      const match = keys.map(key => matches.get(key)).find(Boolean)
+      if (!match) return video
       return {
         ...video,
         isDuplicate: true,
-        existingPostId: postId,
-        existingSlug: row?.post_name,
-        duplicateReason: 'Ya existe en migration.db',
+        existingPostId: match.postId,
+        existingSlug: slugs.get(match.postId),
+        duplicateReason: match.reason,
       }
     })
   }

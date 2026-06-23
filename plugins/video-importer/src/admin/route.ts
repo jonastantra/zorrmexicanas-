@@ -10,6 +10,8 @@ import {
 
 export const dynamic = 'force-dynamic'
 
+const SEARCH_TIMEOUT_MS = 18000
+
 interface SearchBody {
   sourceId: SourceId | 'all'
   keywords?: string
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
       if (body.sourceId === 'all') {
         const availableSources = listSources()
         const settled = await Promise.allSettled(
-          availableSources.map(source => searchVideos({
+          availableSources.map(source => withTimeout(searchVideos({
             sourceId: source.id,
             keywords: body.keywords,
             urls: body.urls,
@@ -86,7 +88,7 @@ export async function POST(request: Request) {
             pageCount: body.pageCount,
             maxResults: body.maxResults,
             minDuration: body.minDuration,
-          }).then(videos => ({ source, videos })))
+          }), SEARCH_TIMEOUT_MS, `${source.name} tardó demasiado`).then(videos => ({ source, videos })))
         )
         const videos = annotateDuplicates(deduplicateVideos(settled.flatMap(result =>
           result.status === 'fulfilled' ? result.value.videos : []
@@ -100,7 +102,7 @@ export async function POST(request: Request) {
         }))
         return NextResponse.json({ count: videos.length, videos, sources })
       }
-      const videos = await searchVideos({
+      const videos = await withTimeout(searchVideos({
           sourceId: body.sourceId,
           keywords: body.keywords,
           urls: body.urls,
@@ -108,7 +110,7 @@ export async function POST(request: Request) {
           pageCount: body.pageCount,
           maxResults: body.maxResults,
           minDuration: body.minDuration,
-        })
+        }), SEARCH_TIMEOUT_MS, 'La búsqueda tardó demasiado')
       const annotated = annotateDuplicates(videos)
       return NextResponse.json({
         count: annotated.length,
@@ -197,5 +199,21 @@ function deduplicateVideos(videos: VideoResult[]): VideoResult[] {
     if (seen.has(key)) return false
     seen.add(key)
     return true
+  })
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error(message)), ms)
+    promise.then(
+      value => {
+        clearTimeout(timeout)
+        resolve(value)
+      },
+      error => {
+        clearTimeout(timeout)
+        reject(error)
+      }
+    )
   })
 }

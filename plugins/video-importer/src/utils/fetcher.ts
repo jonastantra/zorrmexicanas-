@@ -13,7 +13,7 @@ export interface FetchOptions {
 export async function fetchHtml(opts: FetchOptions): Promise<string> {
   const ua = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)]
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? 20000)
+  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? 8000)
   try {
     const res = await fetch(opts.url, {
       headers: {

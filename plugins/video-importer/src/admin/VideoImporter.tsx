@@ -66,13 +66,16 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
     setLoading(true)
     setError('')
     setResults(null)
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 30000)
     try {
       const res = await fetch(`${apiBase}?action=search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({ sourceId, keywords: keywords.trim() || undefined, urls: urlList, page, pageCount, maxResults, minDuration }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Error en búsqueda')
       setVideos(data.videos || [])
       setSourceReport(data.sources || [])
@@ -80,10 +83,13 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
         .map((video: VideoResult, i: number) => video.isDuplicate ? -1 : i)
         .filter((i: number) => i >= 0)))
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(err instanceof DOMException && err.name === 'AbortError'
+        ? 'La búsqueda tardó demasiado. Baja las páginas a traer o intenta de nuevo.'
+        : err instanceof Error ? err.message : String(err))
       setVideos([])
       setSourceReport([])
     } finally {
+      window.clearTimeout(timeout)
       setLoading(false)
     }
   }, [apiBase, sourceId, keywords, urls, page, pageCount, maxResults, minDuration])

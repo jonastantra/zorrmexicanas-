@@ -1,6 +1,6 @@
 {
   "name": "@zorritas/video-importer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "Buscador e importador de videos para sitios Next.js + SQLite. Adapta los plugins de WordPress (Ken Importer, WPS Mass Embedder, XVideos Importer Pro) al stack actual.",
   "type": "module",
