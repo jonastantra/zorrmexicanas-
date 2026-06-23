@@ -9,6 +9,18 @@ import AdSlot from '@/components/AdSlot'
 import { getPostBySlug, getCanonicalForSlug, listRelated } from '@/lib/posts'
 import { SITE_CONFIG } from '@/lib/site'
 import { getPostMetrics } from '@/lib/runtime-db'
+import { cleanText } from '@/lib/auto-import/sanitize'
+
+/** Descripción pública limpia; si el excerpt está vacío usa una plantilla natural. */
+function publicDescription(title: string, excerpt: string, category?: string): string {
+  const cleaned = cleanText(excerpt)
+  if (cleaned.length >= 60) return cleaned
+  const cat = category ? `${category} ` : ''
+  return cleanText(
+    `${title}. Disfruta este video ${cat}en alta calidad, completo y sin cortes. ` +
+    `Encuentra más contenido similar y descubre videos relacionados en nuestra colección.`
+  )
+}
 
 export const revalidate = 300
 export const dynamic = 'force-static'
@@ -169,22 +181,14 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         <AdSlot slot="below_player" />
 
         <div className="post-detail-actions">
-          {post.link && (
-            <a
-              href={post.link}
-              target="_blank"
-              rel="nofollow noopener"
-              className="action-btn primary"
-            >
-              ▶ Ver fuente original
-            </a>
-          )}
+          {/* "Ver fuente original" oculto a propósito: el dato post.link se conserva en la base
+              (lo usa el JSON-LD contentUrl), pero no se expone al público. */}
           <ShareButton title={post.title} url={`/${post.slug}`} />
         </div>
 
-        {post.excerpt && (
-          <div className="post-detail-excerpt">{post.excerpt}</div>
-        )}
+        <div className="post-detail-excerpt">
+          {publicDescription(post.title, post.excerpt, post.categories[0]?.name)}
+        </div>
 
         {cleanContent && (
           <div className="post-detail-content">

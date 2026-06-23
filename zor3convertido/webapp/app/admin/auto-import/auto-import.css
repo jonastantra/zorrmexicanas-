@@ -1,0 +1,66 @@
+.ai-wrap { color: #eee; font-size: 13px; }
+.ai-head { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; margin-bottom: 12px; }
+.ai-head h1 { font-size: 20px; color: #ff2e63; margin: 0; }
+.ai-summary { display: flex; gap: 16px; flex-wrap: wrap; color: #bbb; }
+.ai-summary b { color: #fff; }
+.ai-summary .warn b { color: #ffb020; }
+.ai-summary .bad b { color: #ff5c5c; }
+
+.ai-bulk { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.ai-bulk button, .ai-filters button, .acts button {
+  background: #23233a; color: #ddd; border: 1px solid #383852; border-radius: 6px;
+  padding: 7px 11px; cursor: pointer; font-size: 12px;
+}
+.ai-bulk button:hover:not(:disabled), .ai-filters button:hover { background: #2e2e4a; }
+.ai-bulk button:disabled { opacity: .5; cursor: wait; }
+.ai-bulk .accent, .accent { background: #ff2e63; border-color: #ff2e63; color: #fff; font-weight: 600; }
+.ai-busy { color: #ffb020; }
+
+.ai-settings { background: #16161f; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.ai-settings label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #aaa; }
+.ai-settings input, .ai-settings textarea, .ai-modal input, .ai-modal textarea {
+  background: #0d0d13; border: 1px solid #383852; border-radius: 5px; color: #fff; padding: 6px 8px; font-size: 12px;
+}
+.ai-prompt { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+.ai-prompt textarea { width: 100%; font-family: inherit; }
+.ai-settings > button { margin-top: 12px; }
+
+.ai-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+.ai-filters button.active { background: #ff2e63; border-color: #ff2e63; color: #fff; }
+.ai-search { margin-left: auto; background: #0d0d13; border: 1px solid #383852; border-radius: 6px; color: #fff; padding: 7px 10px; min-width: 200px; }
+
+.ai-table-scroll { overflow-x: auto; border: 1px solid #2a2a3a; border-radius: 8px; }
+.ai-table { border-collapse: collapse; width: 100%; min-width: 1200px; }
+.ai-table th, .ai-table td { border-bottom: 1px solid #23233a; padding: 7px 9px; text-align: left; vertical-align: top; }
+.ai-table th { background: #16161f; position: sticky; top: 0; color: #9aa; font-weight: 600; font-size: 11px; z-index: 2; }
+.ai-table tr:hover td { background: #15151f; }
+.ai-table img { width: 96px; height: 54px; object-fit: cover; border-radius: 4px; background: #000; }
+.ai-table td.orig { max-width: 220px; color: #999; }
+.ai-table td.ai-t { max-width: 220px; color: #fff; }
+.ai-table td.ai-d { max-width: 260px; color: #bbb; }
+.ai-table td.acts { white-space: nowrap; }
+.acts a, .acts button { display: inline-block; margin: 1px; padding: 4px 6px; text-decoration: none; }
+.acts a { color: #6cf; }
+.empty { text-align: center; color: #777; padding: 24px; }
+
+.badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.badge.candidate { background: #33384a; color: #cdd; }
+.badge.rewritten { background: #1f3a52; color: #8fd0ff; }
+.badge.scheduled { background: #1f4d2e; color: #7ff0a0; }
+.badge.published { background: #14532d; color: #b9f6ca; }
+.badge.failed { background: #5a1f1f; color: #ff9a9a; }
+.badge.needs_review { background: #5a4a14; color: #ffd479; }
+.badge.skipped { background: #2a2a3a; color: #999; }
+.err { color: #ff8a8a; font-size: 10px; margin-top: 3px; }
+.ai-total { color: #888; margin-top: 8px; }
+
+.ai-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.65); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.ai-modal { background: #16161f; border: 1px solid #383852; border-radius: 10px; padding: 20px; width: min(620px, 92vw); }
+.ai-modal h3 { margin: 0 0 6px; color: #ff2e63; }
+.ai-modal .orig-ref { color: #888; font-size: 11px; margin: 0 0 12px; }
+.ai-modal label { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; font-size: 11px; color: #aaa; }
+.ai-modal input, .ai-modal textarea { width: 100%; }
+.ai-modal-acts { display: flex; justify-content: flex-end; gap: 8px; }
+
+.ai-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #23233a; border: 1px solid #ff2e63; color: #fff; padding: 12px 20px; border-radius: 8px; z-index: 1100; max-width: 80vw; }
