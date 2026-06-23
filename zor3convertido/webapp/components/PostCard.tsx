@@ -1,9 +1,5 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import type { PostListItem } from '@/lib/site'
-
-// Domains Next.js Image is allowed to optimize
-const PROXY_THUMB_HOSTS = ['xvideos-cdn.com', 'phncdn.com', 'pornhub.com', 'redtube.com', 'youporn.com', 'xhamster.com', 'ytimg.com']
 
 function processThumb(url: string | null): string | null {
   if (!url) return null

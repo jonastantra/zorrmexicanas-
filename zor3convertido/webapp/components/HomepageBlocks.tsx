@@ -13,7 +13,9 @@ export default function HomepageBlocks() {
   return (
     <>
       {blocks.map(block => {
-        const limit = Math.max(1, Math.min(block.item_limit, 48))
+        // Keep the home page useful without shipping dozens of cards below
+        // the fold. Deeper discovery remains available through pagination.
+        const limit = Math.max(1, Math.min(block.item_limit, 8))
         const posts =
           block.block_type === 'popular' ? listPopular({ limit }) :
           block.block_type === 'random' ? listRandom({ limit }) :
