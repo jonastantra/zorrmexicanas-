@@ -5,6 +5,7 @@ import {
   listSources,
   type ImportOptions,
   type SourceId,
+  type VideoResult,
 } from '../index.js'
 
 export const dynamic = 'force-dynamic'
@@ -14,6 +15,8 @@ interface SearchBody {
   keywords?: string
   urls?: string[]
   page?: number
+  pageCount?: number
+  maxResults?: number
   minDuration?: number
 }
 
@@ -22,6 +25,8 @@ interface ImportBody {
   keywords?: string
   urls?: string[]
   page?: number
+  pageCount?: number
+  maxResults?: number
   minDuration?: number
   videos?: Array<{
     videoId: string
@@ -78,12 +83,14 @@ export async function POST(request: Request) {
             keywords: body.keywords,
             urls: body.urls,
             page: body.page,
+            pageCount: body.pageCount,
+            maxResults: body.maxResults,
             minDuration: body.minDuration,
           }).then(videos => ({ source, videos })))
         )
-        const videos = settled.flatMap(result =>
+        const videos = annotateDuplicates(deduplicateVideos(settled.flatMap(result =>
           result.status === 'fulfilled' ? result.value.videos : []
-        )
+        )))
         const sources = settled.map((result, index) => ({
           ...availableSources[index],
           count: result.status === 'fulfilled' ? result.value.videos.length : 0,
@@ -94,16 +101,19 @@ export async function POST(request: Request) {
         return NextResponse.json({ count: videos.length, videos, sources })
       }
       const videos = await searchVideos({
-        sourceId: body.sourceId,
-        keywords: body.keywords,
-        urls: body.urls,
-        page: body.page,
-        minDuration: body.minDuration,
-      })
+          sourceId: body.sourceId,
+          keywords: body.keywords,
+          urls: body.urls,
+          page: body.page,
+          pageCount: body.pageCount,
+          maxResults: body.maxResults,
+          minDuration: body.minDuration,
+        })
+      const annotated = annotateDuplicates(videos)
       return NextResponse.json({
-        count: videos.length,
-        videos,
-        sources: [{ id: body.sourceId, name: body.sourceId, count: videos.length }],
+        count: annotated.length,
+        videos: annotated,
+        sources: [{ id: body.sourceId, name: listSources().find(source => source.id === body.sourceId)?.name ?? body.sourceId, count: annotated.length }],
       })
     } catch (err) {
       return NextResponse.json(
@@ -132,6 +142,8 @@ export async function POST(request: Request) {
           keywords: body.keywords,
           urls: body.urls,
           page: body.page,
+          pageCount: body.pageCount,
+          maxResults: body.maxResults,
           minDuration: body.minDuration,
         })
       } catch (err) {
@@ -165,4 +177,25 @@ function getBodyAction(body: unknown): string {
     return String((body as { action: unknown }).action)
   }
   return 'search'
+}
+
+function annotateDuplicates(videos: VideoResult[]): VideoResult[] {
+  const dbPath = process.env.MIGRATION_DB_PATH
+  if (!dbPath) return videos
+  const publisher = new Publisher({ dbPath })
+  try {
+    return publisher.annotateExisting(videos)
+  } finally {
+    publisher.close()
+  }
+}
+
+function deduplicateVideos(videos: VideoResult[]): VideoResult[] {
+  const seen = new Set<string>()
+  return videos.filter(video => {
+    const key = `${video.sourceId}:${video.videoId || video.embedUrl || video.url}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }

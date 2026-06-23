@@ -10,12 +10,18 @@ export interface VideoResult {
   embedUrl: string
   tags: string[]
   description?: string
+  isDuplicate?: boolean
+  existingPostId?: number
+  existingSlug?: string
+  duplicateReason?: string
 }
 
 export interface SearchParams {
   keywords?: string
   urls?: string[]
   page?: number
+  pageCount?: number
+  maxResults?: number
   minDuration?: number
   sourceId: SourceId
 }
@@ -35,6 +41,9 @@ export interface ImportOptions {
   contentTemplate?: string
   thumbsDir?: string
   addToCanonical?: boolean
+  aiRewrite?: boolean
+  aiModel?: string
+  aiPrompt?: string
 }
 
 export interface ImportResult {

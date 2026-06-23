@@ -144,7 +144,9 @@
 }
 
 .results-table tr.duplicate {
+  background: rgba(251, 191, 36, 0.07);
   color: #fbbf24;
+  opacity: 0.82;
 }
 
 .results-table td img {
@@ -165,6 +167,16 @@
   font-size: 0.75rem;
   color: #777;
   margin-top: 0.25rem;
+}
+
+.duplicate-note {
+  color: #fbbf24;
+  font-size: 0.78rem;
+  margin-top: 0.3rem;
+}
+
+.duplicate-note a {
+  color: #fde68a;
 }
 
 .source-badge {

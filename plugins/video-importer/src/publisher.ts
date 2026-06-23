@@ -6,6 +6,7 @@ import { slugify, uniqueSlug } from './utils/slugify.js'
 import { buildIframeHtml } from './utils/fetcher.js'
 import { formatDuration } from './utils/duration.js'
 import { assertValidVideo, normalizeUrl } from './validation.js'
+import { rewriteWithOpenRouter } from './ai.js'
 
 export interface PublisherConfig {
   dbPath: string
@@ -56,9 +57,28 @@ export class Publisher {
 
     const legacy = this.db.prepare(
       `SELECT post_id FROM post_metadata
-       WHERE meta_key='link' AND meta_value IN (?, ?) LIMIT 1`
-    ).get(video.url, normalizeUrl(video.url)) as { post_id: number } | undefined
+       WHERE meta_key IN ('link', 'embed', 'thumb')
+         AND meta_value IN (?, ?, ?, ?)
+       LIMIT 1`
+    ).get(video.url, normalizeUrl(video.url), video.embedUrl, normalizeUrl(video.embedUrl)) as { post_id: number } | undefined
     return legacy?.post_id ?? null
+  }
+
+  annotateExisting(videos: VideoResult[]): VideoResult[] {
+    return videos.map((video) => {
+      const postId = this.findExisting(video)
+      if (!postId) return video
+      const row = this.db.prepare(`SELECT post_name FROM posts WHERE id=?`).get(postId) as
+        | { post_name: string }
+        | undefined
+      return {
+        ...video,
+        isDuplicate: true,
+        existingPostId: postId,
+        existingSlug: row?.post_name,
+        duplicateReason: 'Ya existe en migration.db',
+      }
+    })
   }
 
   slugExists(slug: string): boolean {
@@ -116,17 +136,24 @@ export class Publisher {
     }
 
     const status = opts.postStatus ?? 'publish'
-    const titleTpl = opts.titleTemplate ?? '{title}'
-    const contentTpl = opts.contentTemplate ?? '{embed_code}\n\n{title} - {duration}'
+    const rewritten = opts.aiRewrite
+      ? await rewriteWithOpenRouter(video, { model: opts.aiModel, prompt: opts.aiPrompt })
+      : null
+    const publishVideo = rewritten
+      ? { ...video, title: rewritten.title, description: rewritten.description }
+      : video
 
-    const title = applyTemplate(titleTpl, video)
-    const baseSlug = slugify(video.title)
+    const titleTpl = opts.titleTemplate ?? '{title}'
+    const contentTpl = opts.contentTemplate ?? '{embed_code}\n\n{title} - {duration}\n\n{description}'
+
+    const title = applyTemplate(titleTpl, publishVideo)
+    const baseSlug = slugify(title)
     const slug = uniqueSlug(baseSlug, (s) => this.slugExists(s))
     const now = new Date()
     const dateStr = now.toISOString().replace('T', ' ').slice(0, 19)
     const embedHtml = buildIframeHtml(video.embedUrl)
 
-    const content = applyTemplate(contentTpl, video, { embed_code: embedHtml })
+    const content = applyTemplate(contentTpl, publishVideo, { embed_code: embedHtml })
 
     let postId: number
     this.db.transaction(() => {
@@ -137,7 +164,7 @@ export class Publisher {
           post_parent, guid, menu_order, post_type, post_mime_type, comment_count
         ) VALUES (1, ?, ?, ?, ?, ?, ?, 'open', 'open', ?, ?, ?, 0, ?, 0, 'post', '', 0)`
       ).run(
-        dateStr, now.toISOString(), content, title, video.title, status,
+        dateStr, now.toISOString(), content, title, publishVideo.description ?? video.title, status,
         slug, dateStr, now.toISOString(),
         `${this.siteBaseUrl}/${slug}`
       )

@@ -19,6 +19,8 @@ interface ImportOptions {
   categorySlug?: string
   postStatus?: 'publish' | 'draft'
   downloadThumbnail?: boolean
+  aiRewrite?: boolean
+  aiModel?: string
 }
 
 interface Props {
@@ -30,6 +32,8 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
   const [keywords, setKeywords] = useState('')
   const [urls, setUrls] = useState('')
   const [page, setPage] = useState(1)
+  const [pageCount, setPageCount] = useState(3)
+  const [maxResults, setMaxResults] = useState(120)
   const [minDuration, setMinDuration] = useState(0)
   const [videos, setVideos] = useState<VideoResult[]>([])
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -37,9 +41,11 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
   const [importing, setImporting] = useState(false)
   const [results, setResults] = useState<ImportBatchResult | null>(null)
   const [error, setError] = useState('')
-  const [status, setStatus] = useState<'publish' | 'draft'>('draft')
-  const [category, setCategory] = useState('')
+  const [status, setStatus] = useState<'publish' | 'draft'>('publish')
+  const [category, setCategory] = useState('amateur-casero-mexicana')
   const [downloadThumb, setDownloadThumb] = useState(true)
+  const [aiRewrite, setAiRewrite] = useState(false)
+  const [aiModel, setAiModel] = useState('qwen/qwen-2.5-7b-instruct')
   const [sourceReport, setSourceReport] = useState<Array<{ id: string; name: string; count: number; error?: string }>>([])
 
   const sources: { id: SourceId | 'all'; name: string }[] = [
@@ -64,13 +70,15 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
       const res = await fetch(`${apiBase}?action=search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId, keywords: keywords.trim() || undefined, urls: urlList, page, minDuration }),
+        body: JSON.stringify({ sourceId, keywords: keywords.trim() || undefined, urls: urlList, page, pageCount, maxResults, minDuration }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error en búsqueda')
       setVideos(data.videos || [])
       setSourceReport(data.sources || [])
-      setSelected(new Set(data.videos?.map((_: VideoResult, i: number) => i) ?? []))
+      setSelected(new Set((data.videos || [])
+        .map((video: VideoResult, i: number) => video.isDuplicate ? -1 : i)
+        .filter((i: number) => i >= 0)))
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setVideos([])
@@ -78,7 +86,7 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
     } finally {
       setLoading(false)
     }
-  }, [apiBase, sourceId, keywords, urls, page, minDuration])
+  }, [apiBase, sourceId, keywords, urls, page, pageCount, maxResults, minDuration])
 
   const importSelected = useCallback(async () => {
     const toImport = videos.filter((_, i) => selected.has(i))
@@ -94,6 +102,8 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
         postStatus: status,
         categorySlug: category.trim() || undefined,
         downloadThumbnail: downloadThumb,
+        aiRewrite,
+        aiModel: aiModel.trim() || undefined,
       }
       const res = await fetch(`${apiBase}?action=import`, {
         method: 'POST',
@@ -108,7 +118,7 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
     } finally {
       setImporting(false)
     }
-  }, [apiBase, videos, selected, status, category, downloadThumb])
+  }, [apiBase, videos, selected, status, category, downloadThumb, aiRewrite, aiModel])
 
   const toggle = (i: number) => {
     const next = new Set(selected)
@@ -118,8 +128,9 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
   }
 
   const toggleAll = () => {
-    if (selected.size === videos.length) setSelected(new Set())
-    else setSelected(new Set(videos.map((_, i) => i)))
+    const selectable = videos.filter(video => !video.isDuplicate)
+    if (selected.size === selectable.length) setSelected(new Set())
+    else setSelected(new Set(videos.map((video, i) => video.isDuplicate ? -1 : i).filter(i => i >= 0)))
   }
 
   return (
@@ -161,6 +172,14 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
             <input type="number" min={1} value={page} onChange={(e) => setPage(Math.max(1, +e.target.value))} />
           </label>
           <label>
+            Páginas a traer:
+            <input type="number" min={1} max={10} value={pageCount} onChange={(e) => setPageCount(Math.min(10, Math.max(1, +e.target.value)))} />
+          </label>
+          <label>
+            Límite resultados:
+            <input type="number" min={10} max={300} value={maxResults} onChange={(e) => setMaxResults(Math.min(300, Math.max(10, +e.target.value)))} />
+          </label>
+          <label>
             Duración mín (min):
             <input type="number" min={0} value={minDuration} onChange={(e) => setMinDuration(Math.max(0, +e.target.value))} />
           </label>
@@ -185,7 +204,11 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
       {videos.length > 0 && (
         <section className="results-panel">
           <div className="results-header">
-            <h2>{videos.length} videos encontrados ({selected.size} seleccionados)</h2>
+            <h2>
+              {videos.length} videos encontrados ({selected.size} nuevos seleccionados)
+              {' '}
+              <small>{videos.filter(v => v.isDuplicate).length} duplicados omitidos</small>
+            </h2>
             <div className="import-options">
               <label>
                 Estado:
@@ -202,6 +225,16 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
                 <input type="checkbox" checked={downloadThumb} onChange={(e) => setDownloadThumb(e.target.checked)} />
                 Descargar miniatura
               </label>
+              <label>
+                <input type="checkbox" checked={aiRewrite} onChange={(e) => setAiRewrite(e.target.checked)} />
+                Reescribir con IA
+              </label>
+              {aiRewrite && (
+                <label>
+                  Modelo OpenRouter:
+                  <input type="text" value={aiModel} onChange={(e) => setAiModel(e.target.value)} placeholder="qwen/..." />
+                </label>
+              )}
               <button onClick={importSelected} disabled={importing}>
                 {importing ? 'Importando...' : `Importar ${selected.size}`}
               </button>
@@ -211,7 +244,7 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
           <table className="results-table">
             <thead>
               <tr>
-                <th><input type="checkbox" checked={selected.size === videos.length} onChange={toggleAll} /></th>
+	                <th><input type="checkbox" checked={videos.some(v => !v.isDuplicate) && selected.size === videos.filter(v => !v.isDuplicate).length} onChange={toggleAll} /></th>
                 <th>Miniatura</th>
                 <th>Título</th>
                 <th>Duración</th>
@@ -220,9 +253,9 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
             </thead>
             <tbody>
               {videos.map((v, i) => (
-                <tr key={`${v.sourceId}-${v.videoId}`} className={selected.has(i) ? 'selected' : ''}>
-                  <td>
-                    <input type="checkbox" checked={selected.has(i)} onChange={() => toggle(i)} />
+	                <tr key={`${v.sourceId}-${v.videoId}-${i}`} className={`${selected.has(i) ? 'selected' : ''} ${v.isDuplicate ? 'duplicate' : ''}`}>
+	                  <td>
+	                    <input type="checkbox" checked={selected.has(i)} disabled={v.isDuplicate} onChange={() => toggle(i)} />
                   </td>
                   <td>
                     {v.thumbnail ? (
@@ -231,9 +264,14 @@ export function VideoImporter({ apiBase = '/api/admin/importer' }: Props) {
                       <span className="no-thumb">Sin miniatura</span>
                     )}
                   </td>
-                  <td className="title-cell">
-                    <a href={v.url} target="_blank" rel="noopener noreferrer">{v.title}</a>
-                    <div className="tags">{v.tags.slice(0, 6).join(', ')}</div>
+	                  <td className="title-cell">
+	                    <a href={v.url} target="_blank" rel="noopener noreferrer">{v.title}</a>
+	                    {v.isDuplicate && (
+	                      <div className="duplicate-note">
+	                        Ya existe: #{v.existingPostId} {v.existingSlug ? <a href={`/${v.existingSlug}`} target="_blank" rel="noopener noreferrer">/{v.existingSlug}</a> : ''}
+	                      </div>
+	                    )}
+	                    <div className="tags">{v.tags.slice(0, 6).join(', ')}</div>
                   </td>
                   <td>{v.duration ? `${v.duration} min` : '-'}</td>
                   <td className="source-badge">{v.sourceId}</td>

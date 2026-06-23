@@ -45,5 +45,31 @@ export async function searchVideos(params: SearchParams): Promise<VideoResult[]>
     return inspectVideoUrls(params.sourceId, params.urls)
   }
   const adapter = getSourceAdapter(params.sourceId)
-  return adapter.search(params)
+  const pageCount = Math.min(Math.max(1, params.pageCount ?? 1), 10)
+  if (pageCount === 1) {
+    return limitResults(deduplicate(await adapter.search(params)), params.maxResults)
+  }
+
+  const firstPage = Math.max(1, params.page ?? 1)
+  const pages = Array.from({ length: pageCount }, (_value, index) => firstPage + index)
+  const settled = await Promise.allSettled(
+    pages.map(page => adapter.search({ ...params, page, pageCount: 1 }))
+  )
+  const videos = settled.flatMap(result => result.status === 'fulfilled' ? result.value : [])
+  return limitResults(deduplicate(videos), params.maxResults)
+}
+
+function deduplicate(videos: VideoResult[]): VideoResult[] {
+  const seen = new Set<string>()
+  return videos.filter(video => {
+    const key = `${video.sourceId}:${video.videoId || video.embedUrl || video.url}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function limitResults(videos: VideoResult[], maxResults?: number): VideoResult[] {
+  if (!maxResults || maxResults <= 0) return videos
+  return videos.slice(0, Math.min(maxResults, 300))
 }
