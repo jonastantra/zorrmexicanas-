@@ -1,13 +1,20 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import PostCard from '@/components/PostCard'
 import Pagination from '@/components/Pagination'
 import { listPosts } from '@/lib/posts'
 import { SITE_CONFIG } from '@/lib/site'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 300
 
-export const metadata = {
-  title: 'Página {n} - Videos Porno',
+export async function generateMetadata({ params }: { params: Promise<{ n: string }> }): Promise<Metadata> {
+  const page = Math.max(1, parseInt((await params).n, 10) || 1)
+  return {
+    title: `Videos mexicanos recientes - Página ${page}`,
+    description: `Página ${page} del catálogo de videos mexicanos, amateur y latinos.`,
+    alternates: { canonical: page === 1 ? '/' : `/page/${page}` },
+    robots: { index: page <= 100, follow: true },
+  }
 }
 
 export default async function PaginatedHome({ params }: { params: Promise<{ n: string }> }) {

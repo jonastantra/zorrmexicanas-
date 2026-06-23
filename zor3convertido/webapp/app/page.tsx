@@ -10,7 +10,7 @@ import {
 } from '@/lib/posts'
 import { SITE_CONFIG } from '@/lib/site'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 300
 
 export default function HomePage() {
   const stats = getStats()

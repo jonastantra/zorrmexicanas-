@@ -6,7 +6,7 @@ import Pagination from '@/components/Pagination'
 import { getTermBySlug, listPosts, listTags } from '@/lib/posts'
 import { SITE_CONFIG } from '@/lib/site'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 600
 
 export async function generateMetadata({ params, searchParams }: {
   params: Promise<{ slug: string }>
@@ -17,7 +17,7 @@ export async function generateMetadata({ params, searchParams }: {
   const tag = getTermBySlug(slug, 'post_tag')
   if (!tag) return { title: 'Etiqueta no encontrada' }
   return {
-    title: `#${tag.name} - Videos Porno`,
+    title: `#${tag.name} - Videos Porno${page > 1 ? ` - Página ${page}` : ''}`,
     description: `Videos etiquetados con ${tag.name}. ${tag.count.toLocaleString()} videos disponibles.`,
     alternates: { canonical: `/etiqueta/${tag.slug}${page > 1 ? `?page=${page}` : ''}` },
   }

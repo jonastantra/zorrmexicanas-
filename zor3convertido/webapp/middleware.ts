@@ -74,9 +74,12 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/admin/:path*',
+    '/api/admin/:path*',
     '/:year(\\d{4})/:month(\\d{2})/:slug',
     '/:year(\\d{4})/:month(\\d{2})/:slug/',
-    // Match everything except static assets so we can apply redirects broadly.
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
+    // Duplicate WordPress posts live at one-segment paths. Avoid loading the
+    // redirect table for thumbnails, APIs, categories and other known routes.
+    '/:slug((?!admin|api|buscar|categoria|etiqueta|media|page|robots\\.txt|sitemap\\.xml|video-sitemap\\.xml|favicon\\.ico)[^/]+)',
   ],
 }

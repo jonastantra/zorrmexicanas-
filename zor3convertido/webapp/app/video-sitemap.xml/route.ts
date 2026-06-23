@@ -3,6 +3,8 @@ import { SITE_CONFIG } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
+let cachedXml: { body: string; expiresAt: number } | null = null
+
 function escapeXml(value: string): string {
   return value.replace(/[<>&'"]/g, char => ({
     '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;',
@@ -10,6 +12,15 @@ function escapeXml(value: string): string {
 }
 
 export async function GET() {
+  if (cachedXml && cachedXml.expiresAt > Date.now()) {
+    return new Response(cachedXml.body, {
+      headers: {
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+      },
+    })
+  }
+
   const base = SITE_CONFIG.baseUrl.replace(/\/$/, '')
   const posts = queryAll<{
     slug: string
@@ -54,6 +65,7 @@ ${posts.map(post => {
   </url>`
   }).join('\n')}
 </urlset>`
+  cachedXml = { body: xml, expiresAt: Date.now() + 60 * 60 * 1000 }
 
   return new Response(xml, {
     headers: {

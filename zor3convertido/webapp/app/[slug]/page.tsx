@@ -5,11 +5,11 @@ import PostCard from '@/components/PostCard'
 import ShareButton from '@/components/ShareButton'
 import VideoActions from '@/components/VideoActions'
 import AdSlot from '@/components/AdSlot'
-import { getPostBySlug, getCanonicalForSlug, listRelated, listPopular, listCategories, listTags } from '@/lib/posts'
+import { getPostBySlug, getCanonicalForSlug, listRelated } from '@/lib/posts'
 import { SITE_CONFIG } from '@/lib/site'
 import { getPostMetrics } from '@/lib/runtime-db'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 300
 
 function absoluteUrl(value: string): string {
   return new URL(value, SITE_CONFIG.baseUrl).toString()
@@ -95,11 +95,6 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     .replace(/\s+/g, ' ')
     .trim()
 
-  // Sidebar data
-  const topCats = listCategories({ minCount: 100, limit: 12 })
-  const topTags = listTags({ minCount: 100, limit: 18 })
-  const popularSide = listPopular({ limit: 10 })
-
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
@@ -169,6 +164,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
             <iframe
               src={embedSrc}
               title={post.title}
+              loading="lazy"
               allow="autoplay; encrypted-media; fullscreen"
               allowFullScreen
               referrerPolicy="no-referrer"
@@ -243,49 +239,6 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         />
       </article>
 
-      <aside className="sidebar" aria-label="Sidebar">
-        <AdSlot slot="sidebar_top" />
-        <div className="sidebar-block">
-          <h3 className="sidebar-title">🔥 Más vistos</h3>
-          <ul className="sidebar-list">
-            {popularSide.map(p => (
-              <li key={p.id}>
-                <Link href={`/${p.slug}`}>
-                  <span style={{
-                    display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden', maxWidth: 200,
-                  }}>{p.title}</span>
-                  <span className="count">{p.views > 0 ? `${(p.views/1000).toFixed(1)}K` : ''}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="sidebar-block">
-          <h3 className="sidebar-title">📁 Categorías top</h3>
-          <ul className="sidebar-list">
-            {topCats.map(c => (
-              <li key={c.id}>
-                <Link href={`/categoria/${c.slug}`}>
-                  <span>{c.name}</span>
-                  <span className="count">{c.count.toLocaleString()}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="sidebar-block">
-          <h3 className="sidebar-title">🏷️ Tags populares</h3>
-          <div className="tag-cloud">
-            {topTags.map(t => (
-              <Link key={t.id} href={`/etiqueta/${t.slug}`}>#{t.name}</Link>
-            ))}
-          </div>
-        </div>
-        <AdSlot slot="sidebar_bottom" />
-      </aside>
     </div>
   )
 }

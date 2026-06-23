@@ -8,8 +8,6 @@ import { listCategories, listTags } from '@/lib/posts'
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
-export const dynamic = 'force-dynamic'
-
 export const metadata: Metadata = {
   title: { default: 'Videos mexicanos y latinos | Zorritas Mexicanas', template: '%s | Zorritas Mexicanas' },
   description: 'Catálogo de videos mexicanos, amateur y latinos organizado por categorías, etiquetas y tendencias.',

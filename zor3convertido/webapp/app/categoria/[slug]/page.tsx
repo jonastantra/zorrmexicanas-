@@ -6,7 +6,7 @@ import Pagination from '@/components/Pagination'
 import { getTermBySlug, listPosts, listCategories } from '@/lib/posts'
 import { CATEGORY_SEO_COPY, SITE_CONFIG } from '@/lib/site'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 600
 
 export async function generateMetadata({ params, searchParams }: {
   params: Promise<{ slug: string }>
@@ -18,7 +18,7 @@ export async function generateMetadata({ params, searchParams }: {
   if (!cat) return { title: 'Categoría no encontrada' }
   const seo = CATEGORY_SEO_COPY[cat.slug]
   return {
-    title: `${cat.name} - Videos Porno Mexicano`,
+    title: `${cat.name} - Videos Porno Mexicano${page > 1 ? ` - Página ${page}` : ''}`,
     description: `Videos de ${cat.name}. ${cat.count.toLocaleString()} videos disponibles. Porno mexicano, amateur y más en Zorritas Mexicanas.`,
     alternates: { canonical: `/categoria/${cat.slug}${page > 1 ? `?page=${page}` : ''}` },
     openGraph: {

@@ -1,5 +1,6 @@
 import { queryAll, queryOne, queryValue } from './sqlite'
 import { SITE_CONFIG, Post, PostListItem } from './site'
+import { cache } from 'react'
 
 // ===== Posts =====
 
@@ -117,14 +118,14 @@ function rowToPost(row: any): Post {
 
 const termCache = new Map<string, TermInfo[]>()
 
-export function getPostBySlug(slug: string): Post | null {
+export const getPostBySlug = cache((slug: string): Post | null => {
   const row = queryOne<any>(
     POST_BASE_SELECT + ` WHERE p.post_name = ? AND p.post_status = 'publish' AND p.post_type = 'post' LIMIT 1`,
     [slug]
   )
   if (!row) return null
   return rowToPost(row)
-}
+})
 
 /**
  * Returns the canonical post for a slug, if any. Used to resolve a duplicate's
@@ -221,7 +222,7 @@ export function listPosts(opts: { page?: number; perPage?: number; categorySlug?
 
 export type TermInfo = { id: number; slug: string; name: string; description: string; count: number }
 
-export function getTermBySlug(slug: string, taxonomy: 'category' | 'post_tag'): TermInfo | null {
+export const getTermBySlug = cache((slug: string, taxonomy: 'category' | 'post_tag'): TermInfo | null => {
   return queryOne<TermInfo>(
     `SELECT t.id as id, t.slug as slug, t.name as name, tt.description as description,
        (SELECT COUNT(DISTINCT tr.object_id)
@@ -232,7 +233,7 @@ export function getTermBySlug(slug: string, taxonomy: 'category' | 'post_tag'): 
      WHERE t.slug = ? AND tt.taxonomy = ?`,
     [slug, taxonomy]
   )
-}
+})
 
 export function listCategories(opts: { minCount?: number; limit?: number } = {}): TermInfo[] {
   const min = opts.minCount ?? 1

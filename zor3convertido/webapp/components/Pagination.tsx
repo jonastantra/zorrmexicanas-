@@ -5,7 +5,8 @@ export default function Pagination({ page, pages, basePath }: { page: number; pa
 
   const buildHref = (p: number) => {
     if (p === 1) return basePath
-    return `${basePath}page/${p}`
+    if (basePath === '/') return `/page/${p}`
+    return `${basePath}?page=${p}`
   }
 
   const items: (number | 'gap')[] = []
