@@ -4,7 +4,7 @@
 // (VPS básico / EasyPanel sin réplicas). Si algún día hay varias réplicas, hay
 // que mover esto a un cron externo para evitar ciclos duplicados.
 import { settingBool, settingInt, getSetting, setSettings } from './db'
-import { fullCycle, publishDue, revalidateReview, scheduleDaily, improveExisting } from './engine'
+import { fullCycle, publishDue, revalidateReview, scheduleDaily, improveExisting, backfillPublishedCanonical } from './engine'
 
 let started = false
 let ticking = false
@@ -87,5 +87,15 @@ export function startScheduler(): void {
   started = true
   setTimeout(() => { void tick() }, FIRST_DELAY_MS)
   setInterval(() => { void tick() }, TICK_MS)
+  // Rescate único: posts ya publicados que quedaron fuera de canonical_posts
+  // (invisibles). Idempotente; corre una vez al arrancar.
+  setTimeout(() => {
+    try {
+      const n = backfillPublishedCanonical()
+      if (n > 0) console.log(`[auto-scheduler] backfill canonical: +${n} posts ahora visibles`)
+    } catch (err) {
+      console.error('[auto-scheduler] backfill canonical falló:', err instanceof Error ? err.message : err)
+    }
+  }, 20000)
   console.log('[auto-scheduler] iniciado (tick cada 5 min)')
 }

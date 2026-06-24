@@ -30,11 +30,19 @@ function migrationDbPath(): string {
   return p
 }
 
-// El Publisher instalado escribe el título en post_excerpt; forzamos la descripción IA.
-function patchExcerpt(postId: number, description: string): void {
+// Finaliza un post recién publicado:
+//  1) El Publisher instalado escribe el título en post_excerpt; forzamos la
+//     descripción IA.
+//  2) CRÍTICO: lo registra en canonical_posts. TODAS las lecturas del sitio
+//     (listados, página del post, sitemaps) hacen JOIN canonical_posts, así que
+//     un post que NO esté ahí queda INVISIBLE (404 y fuera de listas). Sin esto
+//     los videos auto-publicados no se veían en ningún lado.
+function finalizePublished(postId: number, description: string): void {
   const cdb = openCatalogAdmin()
   try {
+    cdb.exec(`CREATE TABLE IF NOT EXISTS canonical_posts (post_id INTEGER PRIMARY KEY) WITHOUT ROWID`)
     cdb.prepare(`UPDATE posts SET post_excerpt=? WHERE id=?`).run(description, postId)
+    cdb.prepare(`INSERT OR IGNORE INTO canonical_posts(post_id) VALUES(?)`).run(postId)
   } finally {
     cdb.close()
   }
@@ -386,7 +394,7 @@ export async function publishDue(): Promise<CycleStats> {
           downloadThumbnail: true,
         })
         if (result.status === 'created') {
-          patchExcerpt(result.postId, row.ai_description)
+          finalizePublished(result.postId, row.ai_description)
           setPublished.run(result.postId, row.id)
           stats.published++
           logs.push(`#${row.id} → post ${result.postId} (${result.slug})`)
@@ -483,6 +491,27 @@ export async function repairExisting(limit = 20): Promise<{ scanned: number; rep
       await sleep(400)
     }
     return out
+  } finally {
+    cdb.close()
+  }
+}
+
+// Rescata posts ya publicados (antes del fix) que no quedaron en canonical_posts
+// y por eso estaban invisibles. Idempotente. Devuelve cuántos agregó.
+export function backfillPublishedCanonical(): number {
+  const rows = db().prepare(
+    `SELECT created_post_id FROM auto_import_queue WHERE status='published' AND created_post_id IS NOT NULL`
+  ).all() as Array<{ created_post_id: number }>
+  if (rows.length === 0) return 0
+  const cdb = openCatalogAdmin()
+  try {
+    cdb.exec(`CREATE TABLE IF NOT EXISTS canonical_posts (post_id INTEGER PRIMARY KEY) WITHOUT ROWID`)
+    const ins = cdb.prepare(`INSERT OR IGNORE INTO canonical_posts(post_id) VALUES(?)`)
+    let n = 0
+    cdb.transaction(() => {
+      for (const r of rows) n += ins.run(r.created_post_id).changes
+    })()
+    return n
   } finally {
     cdb.close()
   }
@@ -750,7 +779,7 @@ export async function publishOne(id: number): Promise<{ ok: boolean; message: st
       downloadThumbnail: true,
     })
     if (result.status === 'created') {
-      patchExcerpt(result.postId, row.ai_description)
+      finalizePublished(result.postId, row.ai_description)
       db().prepare(`
         UPDATE auto_import_queue SET status='published', created_post_id=?, published_at=datetime('now'),
           error_message=NULL, updated_at=datetime('now') WHERE id=?
