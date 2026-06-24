@@ -11,4 +11,11 @@ export async function register() {
   } catch (err) {
     console.error('[instrumentation] no se pudo iniciar el scheduler:', err)
   }
+  // ANALYZE inicial de la migration.db (una vez), sin bloquear el arranque.
+  try {
+    const { ensureCatalogStats } = await import('@/lib/catalog-admin')
+    setTimeout(() => ensureCatalogStats(), 15000)
+  } catch (err) {
+    console.error('[instrumentation] no se pudo programar ANALYZE:', err)
+  }
 }

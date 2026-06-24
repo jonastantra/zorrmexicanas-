@@ -119,12 +119,28 @@ function rowToPost(row: any): Post {
 const termCache = new Map<string, TermInfo[]>()
 
 export const getPostBySlug = cache((slug: string): Post | null => {
-  const row = queryOne<any>(
-    POST_BASE_SELECT + ` WHERE p.post_name = ? AND p.post_status = 'publish' AND p.post_type = 'post' LIMIT 1`,
-    [slug]
-  )
-  if (!row) return null
-  return rowToPost(row)
+  // PERF: la migration.db no tiene estadísticas (sqlite_stat1), así que el
+  // planificador elegía idx_posts_type_status_date y escaneaba ~283k filas
+  // (~1s por página). Forzamos idx_posts_name (equality en el slug) → <1ms.
+  // Además, ante colisión de slug, preferimos el post canónico (no un duplicado).
+  let id: number | undefined
+  try {
+    id = queryValue<number>(
+      `SELECT id FROM posts INDEXED BY idx_posts_name
+         WHERE post_name = ? AND post_status='publish' AND post_type='post'
+         ORDER BY (CASE WHEN EXISTS(SELECT 1 FROM canonical_posts cp WHERE cp.post_id = posts.id) THEN 0 ELSE 1 END), id DESC
+         LIMIT 1`,
+      [slug]
+    ) ?? undefined
+  } catch {
+    // Si el índice no existe en alguna variante de la DB, plan B sin hint.
+    id = queryValue<number>(
+      `SELECT id FROM posts WHERE post_name = ? AND post_status='publish' AND post_type='post' LIMIT 1`,
+      [slug]
+    ) ?? undefined
+  }
+  if (!id) return null
+  return getPostById(id)
 })
 
 /**
