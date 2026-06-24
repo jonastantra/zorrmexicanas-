@@ -4,7 +4,7 @@ import {
   listQueue, regenerateOne, editRow, setRowStatus, deleteRow, clearFailed, retryFailed,
   publishOne, revalidateReview, bulkAction, type BulkOp,
 } from '@/lib/auto-import/engine'
-import { getSettings, setSettings, listRuns, DEFAULT_SETTINGS } from '@/lib/auto-import/db'
+import { getSettings, setSettings, listRuns, DEFAULT_SETTINGS, DEFAULT_PROMPT } from '@/lib/auto-import/db'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -77,6 +77,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true, restored: retryFailed() })
       case 'revalidate':
         return NextResponse.json({ ok: true, promoted: revalidateReview() })
+      case 'reset-prompt':
+        setSettings({ ai_prompt: DEFAULT_PROMPT })
+        return NextResponse.json({ ok: true, message: 'Prompt restablecido (con más salsa)', settings: getSettings() })
       case 'bulk': {
         const ids = Array.isArray(body.ids) ? (body.ids as unknown[]).map(Number).filter(Number.isFinite) : []
         const op = String(body.op || '') as BulkOp

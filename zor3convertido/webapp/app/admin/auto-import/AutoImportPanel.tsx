@@ -191,9 +191,15 @@ export default function AutoImportPanel({ apiBase }: { apiBase: string }) {
               onChange={e => setDraftSettings(s => ({ ...s, ai_prompt: e.target.value }))}
             />
           </label>
-          <button className="accent" disabled={!!busy} onClick={() => call('save-settings', { settings: draftSettings }).then(() => setShowSettings(false))}>
-            Guardar configuración
-          </button>
+          <div className="ai-settings-acts">
+            <button className="accent" disabled={!!busy} onClick={() => call('save-settings', { settings: draftSettings }).then(() => setShowSettings(false))}>
+              Guardar configuración
+            </button>
+            <button disabled={!!busy} title="Vuelve al prompt por defecto (el nuevo con más salsa)"
+              onClick={() => { if (confirm('¿Restablecer el prompt al de fábrica (con más salsa)? Se pierde tu prompt actual.')) call('reset-prompt') }}>
+              ↩️ Restablecer prompt con salsa
+            </button>
+          </div>
         </section>
       )}
 

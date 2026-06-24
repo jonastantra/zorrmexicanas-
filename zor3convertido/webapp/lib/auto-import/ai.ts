@@ -44,7 +44,7 @@ export async function rewriteEditorial(
       body: JSON.stringify({
         model,
         response_format: { type: 'json_object' },
-        temperature: 0.85,
+        temperature: 0.95,
         max_tokens: 600,
         messages: [
           { role: 'system', content: opts.prompt },
