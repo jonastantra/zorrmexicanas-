@@ -44,6 +44,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   ai_model: 'qwen/qwen-2.5-72b-instruct',
   ai_prompt: DEFAULT_PROMPT,
   publish_status: 'publish',
+  auto_scheduler: 'true', // scheduler interno: ciclo diario + publicar vencidos
 }
 
 export type QueueStatus =
