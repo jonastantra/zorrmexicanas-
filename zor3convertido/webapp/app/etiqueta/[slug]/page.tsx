@@ -16,10 +16,19 @@ export async function generateMetadata({ params, searchParams }: {
   const page = Math.max(1, parseInt((await searchParams).page || '1', 10) || 1)
   const tag = getTermBySlug(slug, 'post_tag')
   if (!tag) return { title: 'Etiqueta no encontrada' }
+  const title = `#${tag.name} - Videos Porno${page > 1 ? ` - Página ${page}` : ''}`
+  const description = `Videos etiquetados con ${tag.name}. ${tag.count.toLocaleString()} videos disponibles.`
   return {
-    title: `#${tag.name} - Videos Porno${page > 1 ? ` - Página ${page}` : ''}`,
-    description: `Videos etiquetados con ${tag.name}. ${tag.count.toLocaleString()} videos disponibles.`,
+    title,
+    description,
+    keywords: [tag.name, 'porno mexicano', 'videos mexicanos', 'mexicanas amateur'],
     alternates: { canonical: `/etiqueta/${tag.slug}${page > 1 ? `?page=${page}` : ''}` },
+    openGraph: { type: 'website', title, description },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, 'max-video-preview': -1, 'max-image-preview': 'large' },
+    },
   }
 }
 
@@ -34,6 +43,25 @@ export default async function TagPage({ params, searchParams }: {
 
   const page = parseInt(sp.page || '1', 10) || 1
   const { posts, pages } = listPosts({ tagSlug: slug, page, perPage: SITE_CONFIG.postsPerPage })
+
+  const base = SITE_CONFIG.baseUrl.replace(/\/$/, '')
+  const tagJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `#${tag.name}`,
+    description: `Videos etiquetados con ${tag.name}`,
+    url: `${base}/etiqueta/${tag.slug}`,
+    isFamilyFriendly: false,
+    inLanguage: 'es-MX',
+  }
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${base}/` },
+      { '@type': 'ListItem', position: 2, name: `#${tag.name}`, item: `${base}/etiqueta/${tag.slug}` },
+    ],
+  }
 
   // Related tags (similar popularity tier, exclude self)
   const relatedTags = listTags({ minCount: Math.max(1000, Math.floor(tag.count * 0.5)), limit: 20 })
@@ -88,6 +116,15 @@ export default async function TagPage({ params, searchParams }: {
           <p><Link href="/" className="action-btn">← Volver al inicio</Link></p>
         </div>
       )}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(tagJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
     </div>
   )
 }

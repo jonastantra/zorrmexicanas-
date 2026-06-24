@@ -55,15 +55,24 @@ export default async function CategoryPage({ params, searchParams }: {
     .filter(c => c.slug !== slug)
     .slice(0, 12)
 
+  const base = SITE_CONFIG.baseUrl.replace(/\/$/, '')
   const categoryJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
     name: seo?.title || cat.name,
     description: seo?.description || cat.description || `Videos de ${cat.name}`,
-    url: `${SITE_CONFIG.baseUrl.replace(/\/$/, '')}/categoria/${cat.slug}`,
+    url: `${base}/categoria/${cat.slug}`,
     isFamilyFriendly: false,
     inLanguage: 'es-MX',
     about: ['porno mexicano', cat.name, 'videos mexicanos'],
+  }
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${base}/` },
+      { '@type': 'ListItem', position: 2, name: cat.name, item: `${base}/categoria/${cat.slug}` },
+    ],
   }
 
   return (
@@ -115,6 +124,10 @@ export default async function CategoryPage({ params, searchParams }: {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(categoryJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
     </div>
   )
