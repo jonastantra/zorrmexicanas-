@@ -29,20 +29,46 @@ function absoluteUrl(value: string): string {
   return new URL(value, SITE_CONFIG.baseUrl).toString()
 }
 
+// Duración a ISO-8601 (PT#H#M#S). Soporta "HH:MM:SS", "MM:SS", unidades
+// ("24 min") y entero suelto (nuestro importador guarda minutos; los tubes
+// suelen guardar segundos). Si no se puede parsear con confianza, se omite:
+// una duración incorrecta en el markup es peor que no ponerla.
 function toIsoDuration(value: string | null): string | undefined {
   if (!value) return undefined
-  const hours = value.match(/(\d+)\s*(?:h|hour)/i)?.[1]
-  const minutes = value.match(/(\d+)\s*(?:min|minute)/i)?.[1]
-  const seconds = value.match(/(\d+)\s*(?:sec|second)/i)?.[1]
-  if (!hours && !minutes && !seconds) return undefined
-  return `PT${hours ? `${hours}H` : ''}${minutes ? `${minutes}M` : ''}${seconds ? `${seconds}S` : ''}`
+  const v = value.trim()
+  const colon = v.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+  if (colon) {
+    const h = colon[3] !== undefined ? +colon[1] : 0
+    const m = colon[3] !== undefined ? +colon[2] : +colon[1]
+    const s = colon[3] !== undefined ? +colon[3] : +colon[2]
+    if (m > 59 || s > 59) return undefined
+    return `PT${h ? `${h}H` : ''}${m ? `${m}M` : ''}${s ? `${s}S` : ''}` || undefined
+  }
+  const hours = v.match(/(\d+)\s*(?:h|hour|hora)/i)?.[1]
+  const minutes = v.match(/(\d+)\s*(?:min|minute|minuto)/i)?.[1]
+  const seconds = v.match(/(\d+)\s*(?:sec|second|seg)/i)?.[1]
+  if (hours || minutes || seconds) {
+    return `PT${hours ? `${hours}H` : ''}${minutes ? `${minutes}M` : ''}${seconds ? `${seconds}S` : ''}`
+  }
+  if (/^\d+$/.test(v)) {
+    const n = +v
+    if (n <= 0) return undefined
+    if (n <= 600) return `PT${n}M` // entero pequeño = minutos (nuestro importador)
+    return `PT${Math.floor(n / 60)}M${n % 60 ? `${n % 60}S` : ''}` // grande = segundos
+  }
+  return undefined
+}
+
+function safeIsoDate(value: string): string | undefined {
+  const d = new Date(value.replace(' ', 'T') + 'Z')
+  return isNaN(d.getTime()) ? undefined : d.toISOString()
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
   const post = getPostBySlug(slug)
   if (!post) return { title: 'No encontrado' }
-  const description = (post.excerpt || post.title).replace(/\s+/g, ' ').trim().slice(0, 160)
+  const description = cleanText(post.excerpt || post.title).slice(0, 160)
   const canonical = absoluteUrl(`/${post.slug}`)
   const image = absoluteUrl(post.thumb || '/og-default.svg')
   return {
@@ -123,13 +149,19 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
     name: post.title,
-    description: post.excerpt || post.title,
+    description: pubDesc.slice(0, 320),
     thumbnailUrl: [absoluteUrl(post.thumb || '/og-default.svg')],
-    uploadDate: new Date(post.date.replace(' ', 'T') + 'Z').toISOString(),
+    uploadDate: safeIsoDate(post.date),
     duration: toIsoDuration(post.duration),
+    // embedUrl es la señal correcta para video embebido. No ponemos contentUrl
+    // porque no alojamos el archivo (sería una señal falsa).
     embedUrl: embedSrc || undefined,
-    contentUrl: post.link || undefined,
     url: absoluteUrl(`/${post.slug}`),
+    publisher: {
+      '@type': 'Organization',
+      name: SITE_CONFIG.name,
+      logo: { '@type': 'ImageObject', url: absoluteUrl('/og-default.svg') },
+    },
     isFamilyFriendly: false,
     inLanguage: 'es-MX',
     interactionStatistic: post.views > 0 ? {
@@ -191,8 +223,8 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         <AdSlot slot="below_player" />
 
         <div className="post-detail-actions">
-          {/* "Ver fuente original" oculto a propósito: el dato post.link se conserva en la base
-              (lo usa el JSON-LD contentUrl), pero no se expone al público. */}
+          {/* "Ver fuente original" oculto a propósito: el dato post.link se conserva en la
+              base pero no se expone al público ni en el markup. */}
           <ShareButton title={post.title} url={`/${post.slug}`} />
         </div>
 
