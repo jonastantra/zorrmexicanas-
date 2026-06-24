@@ -10,7 +10,7 @@ export default function Header({ categories }: { categories: TermInfo[] }) {
       <header className="site-header">
         <div className="site-header-inner">
           <Link href="/" className="brand" aria-label={SITE_CONFIG.name}>
-            <span className="brand-mark" aria-hidden>ZM</span>
+            <span className="brand-mark" aria-hidden>{SITE_CONFIG.mark}</span>
             <span>{SITE_CONFIG.name}</span>
           </Link>
 

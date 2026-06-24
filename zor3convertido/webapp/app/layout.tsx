@@ -5,23 +5,24 @@ import Footer from '@/components/Footer'
 import AgeVerification from '@/components/AgeVerification'
 import CookieConsent from '@/components/CookieConsent'
 import { listCategories, listTags } from '@/lib/posts'
-import { SITE_CONFIG } from '@/lib/site'
+import { SITE_CONFIG, themeCss } from '@/lib/site'
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+const baseUrl = SITE_CONFIG.baseUrl
+const defaultTitle = `${SITE_CONFIG.tagline} | ${SITE_CONFIG.name}`
 
 export const metadata: Metadata = {
-  title: { default: 'Porno mexicano casero y videos amateur | Zorritas Mexicanas', template: '%s | Zorritas Mexicanas' },
+  title: { default: defaultTitle, template: `%s | ${SITE_CONFIG.name}` },
   description: SITE_CONFIG.description,
   metadataBase: new URL(baseUrl),
-  applicationName: 'Zorritas Mexicanas',
-  keywords: ['porno mexicano', 'porno casero mexicano', 'videos mexicanos', 'mexicanas amateur', 'zorras mexicanas', 'Zorritas Mexicanas'],
+  applicationName: SITE_CONFIG.name,
+  keywords: ['porno mexicano', 'porno casero mexicano', 'videos mexicanos', 'mexicanas amateur', SITE_CONFIG.name],
   category: 'video',
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
-    siteName: 'Zorritas Mexicanas',
+    siteName: SITE_CONFIG.name,
     locale: 'es_MX',
-    title: 'Porno mexicano casero y videos amateur | Zorritas Mexicanas',
+    title: defaultTitle,
     description: SITE_CONFIG.description,
   },
   twitter: { card: 'summary_large_image' },
@@ -49,8 +50,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const websiteJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'Zorritas Mexicanas',
-    alternateName: ['Zorras Mexicanas', 'Zorritas', 'ZorritasMexicanas'],
+    name: SITE_CONFIG.name,
+    alternateName: [SITE_CONFIG.shortName],
     description: SITE_CONFIG.description,
     url: baseUrl,
     inLanguage: 'es-MX',
@@ -68,6 +69,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es-MX">
       <head>
+        {/* Tema de color por sitio (rose=Zorritas, blue=Lobas), sobre globals.css */}
+        <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var c=document.cookie.indexOf('zm_age_verified=1')!==-1;var l=localStorage.getItem('zm_age_verified')==='1';if(c||l)document.documentElement.classList.add('age-verified')}catch(e){}})();`,

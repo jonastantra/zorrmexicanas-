@@ -18,7 +18,7 @@ export async function generateMetadata({ params, searchParams }: {
   if (!cat) return { title: 'Categoría no encontrada' }
   const seo = CATEGORY_SEO_COPY[cat.slug]
   const titleBase = seo?.title || `${cat.name} - Videos porno mexicano`
-  const description = seo?.description || `Videos de ${cat.name}. ${cat.count.toLocaleString()} videos disponibles en Zorritas Mexicanas.`
+  const description = seo?.description || `Videos de ${cat.name}. ${cat.count.toLocaleString()} videos disponibles en ${SITE_CONFIG.name}.`
 
   return {
     title: `${titleBase}${page > 1 ? ` - Página ${page}` : ''}`,

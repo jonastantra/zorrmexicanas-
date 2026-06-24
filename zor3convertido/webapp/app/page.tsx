@@ -36,7 +36,7 @@ export default async function HomePage() {
     mainEntity: [
       {
         '@type': 'Question',
-        name: '¿Dónde encontrar porno casero mexicano en Zorritas Mexicanas?',
+        name: `¿Dónde encontrar porno casero mexicano en ${SITE_CONFIG.name}?`,
         acceptedAnswer: {
           '@type': 'Answer',
           text: 'La categoría Amateur Casero reúne videos caseros mexicanos y contenido amateur latino con páginas individuales, miniaturas locales y videos relacionados.',

@@ -1,14 +1,41 @@
 import Database from 'better-sqlite3'
+import fs from 'fs'
 import path from 'path'
+import { MIGRATION_SCHEMA_SQL } from './migration-schema'
 
 const DB_PATH = process.env.MIGRATION_DB_PATH ||
   'C:/Users/retro/OneDrive/Documentos/zorritasmexicanas/_migration_workspace/state/migration.db'
 
 export function openCatalogAdmin() {
+  fs.mkdirSync(path.dirname(path.resolve(DB_PATH)), { recursive: true })
   const db = new Database(path.resolve(DB_PATH))
   db.pragma('journal_mode = WAL')
   db.pragma('busy_timeout = 10000')
   return db
+}
+
+// Crea el esquema vacío si la base es nueva (no existe la tabla `posts`). Esto
+// permite que un sitio nuevo (LobasMexicanas) arranque con una base vacía y el
+// publicador automático la vaya llenando. En un sitio existente no hace nada.
+let schemaEnsured = false
+export function ensureCatalogSchema(): void {
+  if (schemaEnsured) return
+  schemaEnsured = true
+  const db = openCatalogAdmin()
+  try {
+    const hasPosts = db.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='posts'"
+    ).get()
+    if (!hasPosts) {
+      console.log('[catalog] base nueva: creando esquema vacío…')
+      db.exec(MIGRATION_SCHEMA_SQL)
+      console.log('[catalog] esquema creado')
+    }
+  } catch (err) {
+    console.error('[catalog] no se pudo crear el esquema:', err instanceof Error ? err.message : err)
+  } finally {
+    db.close()
+  }
 }
 
 // La migration.db importada no trae estadísticas (sqlite_stat1), así que el
