@@ -58,6 +58,7 @@ const SETTING_FIELDS: Array<{ key: string; label: string; type?: string }> = [
   { key: 'publish_status', label: 'Estado al publicar (publish/draft)' },
   { key: 'auto_improve', label: 'Mejora masiva automática (true/false)' },
   { key: 'improve_daily_batch', label: 'Posts viejos a mejorar por día', type: 'number' },
+  { key: 'fix_retries', label: 'Reintentos de autocorrección IA', type: 'number' },
 ]
 
 export default function AutoImportPanel({ apiBase }: { apiBase: string }) {

@@ -40,6 +40,48 @@ function patchExcerpt(postId: number, description: string): void {
   }
 }
 
+// ---- Reescritura con autocorrección ---------------------------------------
+// "Que se corrija solo": si el texto generado no pasa la validación, en vez de
+// mandarlo a revisión se lo devolvemos a la IA con los problemas concretos para
+// que los arregle (hasta `fix_retries` intentos). Sube calidad y casi nada
+// queda atorado. Si tras los reintentos sigue mal, el llamador lo manda a
+// revisión como antes.
+interface RewriteOutcome {
+  result: { title: string; description: string; model: string }
+  tCheck: ReturnType<typeof checkTitle>
+  dCheck: ReturnType<typeof checkDescription>
+  ok: boolean
+  attempts: number
+}
+
+async function rewriteWithFix(
+  input: Parameters<typeof rewriteEditorial>[0],
+  opts: { model: string; prompt: string }
+): Promise<RewriteOutcome> {
+  const maxRetries = Math.max(0, settingInt('fix_retries', 2))
+  let result = await rewriteEditorial(input, opts)
+  let tCheck = checkTitle(result.title)
+  let dCheck = checkDescription(result.description)
+  let attempts = 1
+
+  while ((!tCheck.ok || !dCheck.ok) && attempts <= maxRetries) {
+    const issues = [...tCheck.reasons, ...dCheck.reasons].join('; ')
+    // Si el problema es un término prohibido, reintentar rara vez ayuda y
+    // gasta cuota: lo dejamos para revisión humana.
+    if (/término prohibido/.test(issues)) break
+    const fixPrompt =
+      `${opts.prompt}\n\nIMPORTANTE: tu intento anterior tuvo estos problemas: ${issues}. ` +
+      `Corrígelos y devuelve SOLO el JSON corregido. ` +
+      `Título anterior: "${result.title}". Descripción anterior: "${result.description}".`
+    result = await rewriteEditorial(input, { ...opts, prompt: fixPrompt })
+    tCheck = checkTitle(result.title)
+    dCheck = checkDescription(result.description)
+    attempts++
+    await sleep(300)
+  }
+  return { result, tCheck, dCheck, ok: tCheck.ok && dCheck.ok, attempts }
+}
+
 // ---- Descubrimiento --------------------------------------------------------
 
 export async function discover(): Promise<CycleStats> {
@@ -159,7 +201,7 @@ export async function rewritePending(batch?: number): Promise<CycleStats> {
 
     for (const row of rows) {
       try {
-        const result = await rewriteEditorial(
+        const { result, tCheck, dCheck, ok, attempts } = await rewriteWithFix(
           {
             originalTitle: cleanText(row.original_title),
             source: row.source_id,
@@ -168,16 +210,14 @@ export async function rewritePending(batch?: number): Promise<CycleStats> {
           },
           { model, prompt }
         )
-        const tCheck = checkTitle(result.title)
-        const dCheck = checkDescription(result.description)
-        if (tCheck.ok && dCheck.ok) {
+        if (ok) {
           setRewritten.run(result.title, result.description, result.model, PROMPT_VERSION, row.id)
           stats.rewritten++
         } else {
           const reasons = [...tCheck.reasons, ...dCheck.reasons].join('; ')
           setReview.run(reasons, result.title, result.description, result.model, PROMPT_VERSION, row.id)
           stats.failed++
-          logs.push(`#${row.id} needs_review: ${reasons}`)
+          logs.push(`#${row.id} needs_review tras ${attempts} intento(s): ${reasons}`)
         }
       } catch (err) {
         const msg = err instanceof OpenRouterError ? err.message : String(err)
@@ -423,13 +463,11 @@ export async function repairExisting(limit = 20): Promise<{ scanned: number; rep
     for (const p of targets) {
       out.scanned++
       try {
-        const result = await rewriteEditorial(
+        const { result, tCheck, dCheck, ok } = await rewriteWithFix(
           { originalTitle: cleanText(p.post_title), source: 'repair' },
           { model, prompt }
         )
-        const tCheck = checkTitle(result.title)
-        const dCheck = checkDescription(result.description)
-        if (!tCheck.ok || !dCheck.ok) {
+        if (!ok) {
           out.failed++
           out.log.push(`#${p.id} omitido: ${[...tCheck.reasons, ...dCheck.reasons].join('; ')}`)
           continue
@@ -520,13 +558,11 @@ export async function improveExisting(limit = 50): Promise<{ scanned: number; im
       out.scanned++
       lastId = p.id
       try {
-        const result = await rewriteEditorial(
+        const { result, tCheck, dCheck, ok } = await rewriteWithFix(
           { originalTitle: cleanText(p.post_title), source: 'improve' },
           { model, prompt }
         )
-        const tCheck = checkTitle(result.title)
-        const dCheck = checkDescription(result.description)
-        if (!tCheck.ok || !dCheck.ok) {
+        if (!ok) {
           out.failed++
           out.log.push(`#${p.id} omitido: ${[...tCheck.reasons, ...dCheck.reasons].join('; ')}`)
           continue
@@ -605,7 +641,7 @@ function getRow(id: number): QueueRow | undefined {
 export async function regenerateOne(id: number): Promise<{ ok: boolean; message: string }> {
   const row = getRow(id)
   if (!row) return { ok: false, message: 'No existe' }
-  const result = await rewriteEditorial(
+  const { result, tCheck, dCheck } = await rewriteWithFix(
     {
       originalTitle: cleanText(row.original_title),
       source: row.source_id,
@@ -614,8 +650,6 @@ export async function regenerateOne(id: number): Promise<{ ok: boolean; message:
     },
     { model: getSetting('ai_model'), prompt: getSetting('ai_prompt') }
   )
-  const tCheck = checkTitle(result.title)
-  const dCheck = checkDescription(result.description)
   const reasons = [...tCheck.reasons, ...dCheck.reasons]
   db().prepare(`
     UPDATE auto_import_queue

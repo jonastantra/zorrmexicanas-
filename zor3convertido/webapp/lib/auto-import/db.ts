@@ -52,6 +52,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   auto_scheduler: 'true', // scheduler interno: ciclo diario + publicar vencidos
   auto_improve: 'true', // mejora masiva diaria de posts canónicos viejos, automática
   improve_daily_batch: '150', // cuántos posts viejos mejora por día el scheduler
+  fix_retries: '2', // reintentos en que la IA corrige su propio texto antes de ir a revisión
 }
 
 export type QueueStatus =
