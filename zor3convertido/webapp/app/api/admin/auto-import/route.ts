@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import {
   discover, rewritePending, scheduleDaily, publishDue, fullCycle, repairExisting,
   listQueue, regenerateOne, editRow, setRowStatus, deleteRow, clearFailed, retryFailed,
-  publishOne, revalidateReview,
+  publishOne, revalidateReview, bulkAction, type BulkOp,
 } from '@/lib/auto-import/engine'
 import { getSettings, setSettings, listRuns, DEFAULT_SETTINGS } from '@/lib/auto-import/db'
 
@@ -77,6 +77,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true, restored: retryFailed() })
       case 'revalidate':
         return NextResponse.json({ ok: true, promoted: revalidateReview() })
+      case 'bulk': {
+        const ids = Array.isArray(body.ids) ? (body.ids as unknown[]).map(Number).filter(Number.isFinite) : []
+        const op = String(body.op || '') as BulkOp
+        const fields = (body.fields || {}) as { category_slug?: string }
+        return NextResponse.json(await bulkAction(ids, op, fields))
+      }
       default:
         return NextResponse.json({ error: `Acción desconocida: ${action}` }, { status: 400 })
     }

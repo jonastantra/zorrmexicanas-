@@ -626,6 +626,49 @@ export async function publishOne(id: number): Promise<{ ok: boolean; message: st
   }
 }
 
+// ---- Acciones masivas ------------------------------------------------------
+
+export type BulkOp =
+  | 'regenerate' | 'publish' | 'skip' | 'resume' | 'pause' | 'delete' | 'set-category'
+
+export async function bulkAction(
+  ids: number[],
+  op: BulkOp,
+  fields?: { category_slug?: string }
+): Promise<{ ok: number; failed: number; messages: string[] }> {
+  const out = { ok: 0, failed: 0, messages: [] as string[] }
+  for (const id of ids) {
+    try {
+      switch (op) {
+        case 'regenerate': {
+          const r = await regenerateOne(id)
+          r.ok ? out.ok++ : (out.failed++, out.messages.push(`#${id}: ${r.message}`))
+          break
+        }
+        case 'publish': {
+          const r = await publishOne(id)
+          r.ok ? out.ok++ : (out.failed++, out.messages.push(`#${id}: ${r.message}`))
+          break
+        }
+        case 'set-category': {
+          const r = editRow(id, { category_slug: fields?.category_slug || '' })
+          r.ok ? out.ok++ : (out.failed++, out.messages.push(`#${id}: ${r.message}`))
+          break
+        }
+        case 'skip': setRowStatus(id, 'skipped'); out.ok++; break
+        case 'resume': setRowStatus(id, 'rewritten'); out.ok++; break
+        case 'pause': setRowStatus(id, 'needs_review'); out.ok++; break
+        case 'delete': deleteRow(id); out.ok++; break
+        default: throw new Error(`Operación desconocida: ${op}`)
+      }
+    } catch (err) {
+      out.failed++
+      out.messages.push(`#${id}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+  return out
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }

@@ -16,6 +16,21 @@
 .ai-bulk .accent, .accent { background: #ff2e63; border-color: #ff2e63; color: #fff; font-weight: 600; }
 .ai-busy { color: #ffb020; }
 
+.ai-bulkbar {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  background: #1b1b2c; border: 1px solid #ff2e63; border-radius: 8px;
+  padding: 9px 12px; margin-bottom: 12px;
+}
+.ai-bulkbar span { color: #ffb0c4; margin-right: 6px; }
+.ai-bulkbar button {
+  background: #23233a; color: #ddd; border: 1px solid #383852; border-radius: 6px;
+  padding: 6px 10px; cursor: pointer; font-size: 12px;
+}
+.ai-bulkbar button:hover:not(:disabled) { background: #2e2e4a; }
+.ai-bulkbar button:disabled { opacity: .5; cursor: wait; }
+.ai-bulkbar button.bad { border-color: #5a1f1f; color: #ff9a9a; }
+.ai-table tr.sel { background: #20203a; }
+
 .ai-settings { background: #16161f; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
 .ai-settings label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #aaa; }
