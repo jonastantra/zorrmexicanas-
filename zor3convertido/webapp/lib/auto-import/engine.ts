@@ -401,7 +401,7 @@ export async function repairExisting(limit = 20): Promise<{ scanned: number; rep
     const candidates = cdb.prepare(`
       SELECT id, post_title, post_excerpt
       FROM posts
-      WHERE post_type='post' AND post_status='publish'
+      WHERE post_type='post' AND post_status='publish'${canonicalClause(cdb)}
       ORDER BY id DESC LIMIT 2000
     `).all() as Array<{ id: number; post_title: string; post_excerpt: string }>
 
@@ -459,12 +459,27 @@ function improveCursor(): number {
   return settingInt('improve_cursor_id', 1_000_000_000)
 }
 
+// Solo los posts CANÓNICOS se sirven; los demás (~268k) son duplicados que
+// redirigen (301) y no se deben reescribir. Si existe la tabla canonical_posts
+// filtramos por ella; si no (p.ej. DB ya podada), se usan todos los publish.
+function canonicalClause(cdb: { prepare(sql: string): { get(): unknown } }): string {
+  try {
+    const has = cdb.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='canonical_posts'"
+    ).get()
+    return has ? ' AND id IN (SELECT post_id FROM canonical_posts)' : ''
+  } catch {
+    return ''
+  }
+}
+
 export function improveProgress(): { total: number; done: number; remaining: number; cursor: number } {
   const cdb = openCatalogAdmin()
   try {
     const cursor = improveCursor()
-    const total = (cdb.prepare(`SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish'`).get() as { n: number }).n
-    const remaining = (cdb.prepare(`SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish' AND id < ?`).get(cursor) as { n: number }).n
+    const canon = canonicalClause(cdb)
+    const total = (cdb.prepare(`SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish'${canon}`).get() as { n: number }).n
+    const remaining = (cdb.prepare(`SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish' AND id < ?${canon}`).get(cursor) as { n: number }).n
     return { total, done: total - remaining, remaining, cursor }
   } finally {
     cdb.close()
@@ -478,10 +493,11 @@ export async function improveExisting(limit = 50): Promise<{ scanned: number; im
   const cdb = openCatalogAdmin()
   try {
     const cursor = improveCursor()
+    const canon = canonicalClause(cdb)
     const rows = cdb.prepare(`
       SELECT id, post_title, post_excerpt
       FROM posts
-      WHERE post_type='post' AND post_status='publish' AND id < ?
+      WHERE post_type='post' AND post_status='publish' AND id < ?${canon}
       ORDER BY id DESC LIMIT ?
     `).all(cursor, limit) as Array<{ id: number; post_title: string; post_excerpt: string }>
 
@@ -535,7 +551,7 @@ export async function improveExisting(limit = 50): Promise<{ scanned: number; im
     // Avanzar el cursor al último id procesado (incl. fallidos) para no repetir.
     setSettings({ improve_cursor_id: String(lastId) })
     out.remaining = (cdb.prepare(
-      `SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish' AND id < ?`
+      `SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish' AND id < ?${canon}`
     ).get(lastId) as { n: number }).n
     out.log.push(`Lote: ${out.improved} mejorados, ${out.failed} omitidos. Faltan ${out.remaining}.`)
     return out
