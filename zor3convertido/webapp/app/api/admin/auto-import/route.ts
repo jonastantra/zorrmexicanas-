@@ -16,7 +16,11 @@ export async function GET(request: Request) {
   const search = url.searchParams.get('search') || undefined
   const offset = parseInt(url.searchParams.get('offset') || '0', 10) || 0
   const { rows, total, counts } = listQueue({ status, search, offset })
-  return NextResponse.json({ settings: getSettings(), rows, total, counts, runs: listRuns(15), improve: improveProgress() })
+  // improveProgress abre la migration.db (grande); si falla no debe tumbar todo
+  // el panel — es un dato secundario.
+  let improve: ReturnType<typeof improveProgress> | null = null
+  try { improve = improveProgress() } catch { improve = null }
+  return NextResponse.json({ settings: getSettings(), rows, total, counts, runs: listRuns(15), improve })
 }
 
 export async function POST(request: Request) {
