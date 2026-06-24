@@ -13,7 +13,12 @@ export default function CookieConsent() {
       const ageVerified =
         window.localStorage.getItem('zm_age_verified') === '1' ||
         document.cookie.split('; ').some(c => c.startsWith('zm_age_verified=1'))
-      const consent = window.localStorage.getItem(STORAGE_KEY)
+      // Revisar localStorage Y la cookie: si el navegador bloquea/limpia el
+      // localStorage (modo privado, protección de rastreo), la cookie conserva
+      // la elección y el banner no vuelve a salir.
+      const consent =
+        window.localStorage.getItem(STORAGE_KEY) ||
+        document.cookie.split('; ').find(c => c.startsWith(`${STORAGE_KEY}=`))?.split('=')[1]
       setVisible(ageVerified && !consent)
     }
     showWhenAllowed()
