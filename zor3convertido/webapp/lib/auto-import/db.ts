@@ -19,7 +19,7 @@ Evita títulos genéricos como:
 
 La descripción debe tener entre 230 y 320 caracteres. Debe sonar natural, descriptiva y útil para SEO. Resume la escena sin exagerar, sin repetir el título y sin parecer spam. Usa español mexicano claro.
 
-No menciones menores, edades, familia, incesto, coerción, violencia, abuso ni promesas falsas. Si el título original sugiere contenido prohibido o ambiguo, conviértelo en una versión legal y genérica entre adultos.
+Todo el contenido es entre adultos. NUNCA menciones ni insinúes menores de edad, edades de menores, coerción, violencia sexual, violación ni abuso. Si el título original sugiere algo de eso, conviértelo en una versión legal y genérica entre adultos. La temática de roles (madrastra, padrastro, etc.) sí está permitida siempre que sean claramente adultos.
 
 No uses emojis, hashtags, comillas, clickbait extremo ni frases artificiales.
 

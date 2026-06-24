@@ -109,6 +109,16 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     .replace(/\s+/g, ' ')
     .trim()
 
+  // El plugin genera content = "Título - NN min Descripción", que repite la
+  // descripción (excerpt) que ya mostramos arriba. Si el content es básicamente
+  // la misma descripción, no lo pintamos para no verse duplicado/robótico.
+  const pubDesc = publicDescription(post.title, post.excerpt, post.categories[0]?.name)
+  const normalize = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+  const nContent = normalize(cleanContent)
+  const nDesc = normalize(pubDesc)
+  const contentIsRedundant =
+    !nContent || nDesc.length > 0 && (nContent.includes(nDesc) || nDesc.includes(nContent))
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
@@ -187,10 +197,10 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         </div>
 
         <div className="post-detail-excerpt">
-          {publicDescription(post.title, post.excerpt, post.categories[0]?.name)}
+          {pubDesc}
         </div>
 
-        {cleanContent && (
+        {cleanContent && !contentIsRedundant && (
           <div className="post-detail-content">
             <p>{cleanContent}</p>
           </div>
