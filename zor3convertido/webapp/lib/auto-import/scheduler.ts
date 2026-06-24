@@ -4,7 +4,7 @@
 // (VPS básico / EasyPanel sin réplicas). Si algún día hay varias réplicas, hay
 // que mover esto a un cron externo para evitar ciclos duplicados.
 import { settingBool, settingInt, getSetting, setSettings } from './db'
-import { fullCycle, publishDue, revalidateReview } from './engine'
+import { fullCycle, publishDue, revalidateReview, scheduleDaily } from './engine'
 
 let started = false
 let ticking = false
@@ -47,7 +47,18 @@ async function tick(): Promise<void> {
       }
     }
 
-    // 2) Publicar lo que ya venció (scheduled_at <= now), hasta max_per_run.
+    // 2) Rescatar needs_review que ya pasan las reglas actuales (barato, sin IA)
+    //    y rellenar la programación hasta el cupo diario. Ambas son baratas y
+    //    idempotentes: scheduleDaily cuenta lo ya programado/publicado hoy, así
+    //    que correrlo en cada tick solo completa hasta daily_limit.
+    try {
+      revalidateReview()
+      scheduleDaily()
+    } catch (err) {
+      console.error('[auto-scheduler] revalidate/schedule falló:', err instanceof Error ? err.message : err)
+    }
+
+    // 3) Publicar lo que ya venció (scheduled_at <= now), hasta max_per_run.
     try {
       await publishDue()
     } catch (err) {
