@@ -27,6 +27,7 @@ interface Dashboard {
   total: number
   counts: Record<string, number>
   runs: Array<Record<string, unknown>>
+  improve?: { total: number; done: number; remaining: number; cursor: number }
 }
 
 const FILTERS: Array<{ key: string; label: string }> = [
@@ -55,6 +56,8 @@ const SETTING_FIELDS: Array<{ key: string; label: string; type?: string }> = [
   { key: 'default_category', label: 'Categoría default' },
   { key: 'ai_model', label: 'Modelo OpenRouter' },
   { key: 'publish_status', label: 'Estado al publicar (publish/draft)' },
+  { key: 'auto_improve', label: 'Mejora masiva automática (true/false)' },
+  { key: 'improve_daily_batch', label: 'Posts viejos a mejorar por día', type: 'number' },
 ]
 
 export default function AutoImportPanel({ apiBase }: { apiBase: string }) {
@@ -107,7 +110,7 @@ export default function AutoImportPanel({ apiBase }: { apiBase: string }) {
       } else if (typeof json.message === 'string') {
         notify(json.message)
       } else {
-        const parts = ['ok', 'queued', 'rewritten', 'scheduled', 'published', 'failed', 'removed', 'restored', 'repaired', 'promoted']
+        const parts = ['ok', 'queued', 'rewritten', 'scheduled', 'published', 'failed', 'removed', 'restored', 'repaired', 'improved', 'remaining', 'promoted']
           .filter(k => typeof json[k] === 'number')
           .map(k => `${k}: ${json[k]}`)
         notify(parts.length ? parts.join(' · ') : 'Listo')
@@ -168,6 +171,21 @@ export default function AutoImportPanel({ apiBase }: { apiBase: string }) {
         <button onClick={() => setShowSettings(s => !s)}>⚙️ Configuración</button>
         {busy && <span className="ai-busy">⏳ {busy}…</span>}
       </section>
+
+      {data.improve && data.improve.total > 0 && (
+        <section className="ai-improve">
+          <div className="ai-improve-info">
+            <b>Mejora SEO de posts viejos:</b>{' '}
+            {data.improve.done.toLocaleString()} / {data.improve.total.toLocaleString()} mejorados
+            {' '}({data.improve.remaining.toLocaleString()} faltan)
+            <div className="ai-improve-bar">
+              <span style={{ width: `${Math.round((data.improve.done / data.improve.total) * 100)}%` }} />
+            </div>
+          </div>
+          <button disabled={!!busy} onClick={() => call('improve', { limit: 50 })}>✨ Mejorar 50 ahora</button>
+          <button disabled={!!busy} onClick={() => call('improve', { limit: 150 })}>✨ Mejorar 150 ahora</button>
+        </section>
+      )}
 
       {showSettings && (
         <section className="ai-settings">

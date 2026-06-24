@@ -50,6 +50,8 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   ai_prompt: DEFAULT_PROMPT,
   publish_status: 'publish',
   auto_scheduler: 'true', // scheduler interno: ciclo diario + publicar vencidos
+  auto_improve: 'false', // mejora masiva diaria de posts viejos (opt-in, gasta IA)
+  improve_daily_batch: '150', // cuántos posts viejos mejora por día el scheduler
 }
 
 export type QueueStatus =

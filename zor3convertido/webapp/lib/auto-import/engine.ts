@@ -4,7 +4,7 @@ import { searchVideos, Publisher } from '@zorritas/video-importer'
 import type { VideoResult, SourceId } from '@zorritas/video-importer'
 import { openCatalogAdmin } from '@/lib/catalog-admin'
 import {
-  db, getSettings, settingInt, settingBool, getSetting,
+  db, getSettings, settingInt, settingBool, getSetting, setSettings,
   startRun, finishRun, type QueueRow,
 } from './db'
 import { rewriteEditorial, OpenRouterError, PROMPT_VERSION } from './ai'
@@ -444,6 +444,100 @@ export async function repairExisting(limit = 20): Promise<{ scanned: number; rep
       }
       await sleep(400)
     }
+    return out
+  } finally {
+    cdb.close()
+  }
+}
+
+// ---- Mejora masiva de TODOS los posts (no solo los rotos) -----------------
+// Recorre el catálogo completo de viejo→nuevo con un cursor por id, reescribe
+// título+descripción con IA y guarda el resultado. Procesa en lotes para no
+// saturar el VPS ni la cuota; el cursor garantiza que nunca repite un post.
+
+function improveCursor(): number {
+  return settingInt('improve_cursor_id', 1_000_000_000)
+}
+
+export function improveProgress(): { total: number; done: number; remaining: number; cursor: number } {
+  const cdb = openCatalogAdmin()
+  try {
+    const cursor = improveCursor()
+    const total = (cdb.prepare(`SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish'`).get() as { n: number }).n
+    const remaining = (cdb.prepare(`SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish' AND id < ?`).get(cursor) as { n: number }).n
+    return { total, done: total - remaining, remaining, cursor }
+  } finally {
+    cdb.close()
+  }
+}
+
+export async function improveExisting(limit = 50): Promise<{ scanned: number; improved: number; failed: number; remaining: number; finished: boolean; log: string[] }> {
+  const out = { scanned: 0, improved: 0, failed: 0, remaining: 0, finished: false, log: [] as string[] }
+  const model = getSetting('ai_model')
+  const prompt = getSetting('ai_prompt')
+  const cdb = openCatalogAdmin()
+  try {
+    const cursor = improveCursor()
+    const rows = cdb.prepare(`
+      SELECT id, post_title, post_excerpt
+      FROM posts
+      WHERE post_type='post' AND post_status='publish' AND id < ?
+      ORDER BY id DESC LIMIT ?
+    `).all(cursor, limit) as Array<{ id: number; post_title: string; post_excerpt: string }>
+
+    if (rows.length === 0) {
+      out.finished = true
+      out.log.push('No quedan posts por mejorar (cursor al inicio del catálogo)')
+      return out
+    }
+
+    const history = db().prepare(`
+      INSERT INTO ai_rewrite_history(post_id, old_title, new_title, old_description, new_description, model)
+      VALUES(?, ?, ?, ?, ?, ?)
+    `)
+    const updatePost = cdb.prepare(`
+      UPDATE posts SET post_title=?, post_excerpt=?, post_modified=datetime('now'), post_modified_gmt=datetime('now') WHERE id=?
+    `)
+
+    let lastId = cursor
+    for (const p of rows) {
+      out.scanned++
+      lastId = p.id
+      try {
+        const result = await rewriteEditorial(
+          { originalTitle: cleanText(p.post_title), source: 'improve' },
+          { model, prompt }
+        )
+        const tCheck = checkTitle(result.title)
+        const dCheck = checkDescription(result.description)
+        if (!tCheck.ok || !dCheck.ok) {
+          out.failed++
+          out.log.push(`#${p.id} omitido: ${[...tCheck.reasons, ...dCheck.reasons].join('; ')}`)
+          continue
+        }
+        updatePost.run(result.title, result.description, p.id)
+        history.run(p.id, p.post_title, result.title, p.post_excerpt || '', result.description, result.model)
+        out.improved++
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        out.failed++
+        out.log.push(`#${p.id} error: ${msg}`)
+        // Si la API cae en bloque, no quemar cuota: parar y dejar el cursor en
+        // el último intentado para reanudar luego.
+        if (err instanceof OpenRouterError && /HTTP 4|API_KEY|timeout/i.test(msg)) {
+          out.log.push('Abortando lote por fallo de API')
+          break
+        }
+      }
+      await sleep(400)
+    }
+
+    // Avanzar el cursor al último id procesado (incl. fallidos) para no repetir.
+    setSettings({ improve_cursor_id: String(lastId) })
+    out.remaining = (cdb.prepare(
+      `SELECT COUNT(*) AS n FROM posts WHERE post_type='post' AND post_status='publish' AND id < ?`
+    ).get(lastId) as { n: number }).n
+    out.log.push(`Lote: ${out.improved} mejorados, ${out.failed} omitidos. Faltan ${out.remaining}.`)
     return out
   } finally {
     cdb.close()

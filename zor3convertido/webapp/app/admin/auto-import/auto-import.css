@@ -37,6 +37,20 @@
 }
 .ai-settings-acts button:disabled { opacity: .5; cursor: wait; }
 
+.ai-improve {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  background: #16161f; border: 1px solid #333; border-radius: 8px;
+  padding: 12px 14px; margin-bottom: 14px;
+}
+.ai-improve-info { flex: 1; min-width: 240px; color: #cdd; }
+.ai-improve-bar { height: 8px; background: #2a2a3a; border-radius: 5px; margin-top: 6px; overflow: hidden; }
+.ai-improve-bar span { display: block; height: 100%; background: #ff2e63; border-radius: 5px; transition: width .3s; }
+.ai-improve button {
+  background: #23233a; color: #ddd; border: 1px solid #383852; border-radius: 6px;
+  padding: 7px 11px; cursor: pointer; font-size: 12px;
+}
+.ai-improve button:disabled { opacity: .5; cursor: wait; }
+
 .ai-settings { background: #16161f; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
 .ai-settings label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #aaa; }

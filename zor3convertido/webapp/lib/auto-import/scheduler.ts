@@ -4,7 +4,7 @@
 // (VPS básico / EasyPanel sin réplicas). Si algún día hay varias réplicas, hay
 // que mover esto a un cron externo para evitar ciclos duplicados.
 import { settingBool, settingInt, getSetting, setSettings } from './db'
-import { fullCycle, publishDue, revalidateReview, scheduleDaily } from './engine'
+import { fullCycle, publishDue, revalidateReview, scheduleDaily, improveExisting } from './engine'
 
 let started = false
 let ticking = false
@@ -44,6 +44,18 @@ async function tick(): Promise<void> {
         await fullCycle() // discover → rewrite → scheduleDaily (respeta daily_limit)
       } catch (err) {
         console.error('[auto-scheduler] ciclo diario falló:', err instanceof Error ? err.message : err)
+      }
+    }
+
+    // 1b) Mejora masiva de posts viejos: un lote al día, solo si está activada
+    //     (opt-in porque consume IA). Marca el día para correr una sola vez.
+    if (getSetting('auto_improve') === 'true' &&
+        localHour >= startHour && getSetting('sched_last_improve_day') !== today) {
+      setSettings({ sched_last_improve_day: today })
+      try {
+        await improveExisting(settingInt('improve_daily_batch', 150))
+      } catch (err) {
+        console.error('[auto-scheduler] mejora masiva falló:', err instanceof Error ? err.message : err)
       }
     }
 

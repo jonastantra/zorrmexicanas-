@@ -3,6 +3,7 @@ import {
   discover, rewritePending, scheduleDaily, publishDue, fullCycle, repairExisting,
   listQueue, regenerateOne, editRow, setRowStatus, deleteRow, clearFailed, retryFailed,
   publishOne, revalidateReview, bulkAction, type BulkOp,
+  improveExisting, improveProgress,
 } from '@/lib/auto-import/engine'
 import { getSettings, setSettings, listRuns, DEFAULT_SETTINGS, DEFAULT_PROMPT } from '@/lib/auto-import/db'
 
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
   const search = url.searchParams.get('search') || undefined
   const offset = parseInt(url.searchParams.get('offset') || '0', 10) || 0
   const { rows, total, counts } = listQueue({ status, search, offset })
-  return NextResponse.json({ settings: getSettings(), rows, total, counts, runs: listRuns(15) })
+  return NextResponse.json({ settings: getSettings(), rows, total, counts, runs: listRuns(15), improve: improveProgress() })
 }
 
 export async function POST(request: Request) {
@@ -53,6 +54,8 @@ export async function POST(request: Request) {
         return NextResponse.json(await fullCycle())
       case 'repair':
         return NextResponse.json(await repairExisting(Number(body.limit) || 20))
+      case 'improve':
+        return NextResponse.json(await improveExisting(Number(body.limit) || 50))
       case 'regenerate':
         return NextResponse.json(await regenerateOne(id))
       case 'edit':

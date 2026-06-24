@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { discover, rewritePending, scheduleDaily, publishDue, fullCycle } from '@/lib/auto-import/engine'
+import { discover, rewritePending, scheduleDaily, publishDue, fullCycle, improveExisting } from '@/lib/auto-import/engine'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -30,6 +30,8 @@ async function handle(request: Request) {
         return NextResponse.json(await publishDue())
       case 'full-cycle':
         return NextResponse.json(await fullCycle())
+      case 'improve':
+        return NextResponse.json(await improveExisting(Number(new URL(request.url).searchParams.get('limit')) || 50))
       default:
         return NextResponse.json({ error: `Acción desconocida: ${action}` }, { status: 400 })
     }
