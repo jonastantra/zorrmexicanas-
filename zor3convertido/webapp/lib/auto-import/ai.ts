@@ -46,7 +46,8 @@ export async function rewriteEditorial(
   const model = opts.model || process.env.OPENROUTER_MODEL || 'qwen/qwen-2.5-72b-instruct'
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 30000)
+  // MiniMax (modelos de razonamiento) puede tardar más: damos 60s.
+  const timeout = setTimeout(() => controller.abort(), provider === 'minimax' ? 60000 : 30000)
   let response: Response
   try {
     const headers: Record<string, string> = {
@@ -57,29 +58,35 @@ export async function rewriteEditorial(
       headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
       headers['X-Title'] = process.env.NEXT_PUBLIC_SITE_NAME || 'AutoImport'
     }
+    const payload: Record<string, unknown> = {
+      model,
+      temperature: 0.95,
+      // Los modelos de razonamiento de MiniMax consumen tokens "pensando"
+      // antes de responder; damos margen para que el JSON final salga completo.
+      max_tokens: provider === 'minimax' ? 2000 : 600,
+      messages: [
+        { role: 'system', content: opts.prompt },
+        {
+          role: 'user',
+          content: JSON.stringify({
+            originalTitle: input.originalTitle,
+            source: input.source,
+            tags: input.tags ?? [],
+            durationMinutes: input.durationMinutes ?? 0,
+            requiredJson: { title: 'string 55-90 chars', description: 'string 230-320 chars' },
+          }),
+        },
+      ],
+    }
+    // response_format json_object solo en OpenRouter; MiniMax podría rechazarlo,
+    // y de todos modos extraemos el JSON del contenido como respaldo.
+    if (provider === 'openrouter') payload.response_format = { type: 'json_object' }
+
     response = await fetch(cfg.url, {
       method: 'POST',
       signal: controller.signal,
       headers,
-      body: JSON.stringify({
-        model,
-        response_format: { type: 'json_object' },
-        temperature: 0.95,
-        max_tokens: 600,
-        messages: [
-          { role: 'system', content: opts.prompt },
-          {
-            role: 'user',
-            content: JSON.stringify({
-              originalTitle: input.originalTitle,
-              source: input.source,
-              tags: input.tags ?? [],
-              durationMinutes: input.durationMinutes ?? 0,
-              requiredJson: { title: 'string 55-90 chars', description: 'string 230-320 chars' },
-            }),
-          },
-        ],
-      }),
+      body: JSON.stringify(payload),
     })
   } catch (err) {
     throw new OpenRouterError(
