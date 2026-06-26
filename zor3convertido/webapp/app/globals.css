@@ -1685,3 +1685,32 @@ body {
     font-size: 13px;
   }
 }
+
+/* ===== Realce visual (tema menos básico) ===== */
+/* Título del home con gradiente de acento */
+.home-intro .page-title {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+/* Brillo sutil en elementos de acento */
+.action-btn.primary,
+.pagination .current,
+.search-form button { box-shadow: var(--accent-glow, none); }
+/* Tarjetas: un poco más de vida al pasar el mouse */
+.post-card { transition: transform .18s ease, box-shadow .18s ease; }
+.post-card:hover { transform: translateY(-3px); box-shadow: var(--accent-glow, 0 8px 24px rgba(0,0,0,.4)); }
+/* Encabezados de sección con barra de acento */
+.section-title { position: relative; padding-left: 12px; }
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%; transform: translateY(-50%);
+  width: 4px; height: 1em;
+  border-radius: 3px;
+  background: var(--accent-gradient);
+}

@@ -41,7 +41,7 @@ const FILTERS: Array<{ key: string; label: string }> = [
   { key: 'skipped', label: 'Saltados' },
 ]
 
-const SETTING_FIELDS: Array<{ key: string; label: string; type?: string }> = [
+const SETTING_FIELDS: Array<{ key: string; label: string; type?: string; options?: string[] }> = [
   { key: 'enabled', label: 'Activar automático (true/false)' },
   { key: 'ai_enabled', label: 'IA activada (true/false)' },
   { key: 'source_id', label: 'Fuente' },
@@ -54,7 +54,8 @@ const SETTING_FIELDS: Array<{ key: string; label: string; type?: string }> = [
   { key: 'schedule_end_hour', label: 'Hora fin (0-24)', type: 'number' },
   { key: 'tz_offset_minutes', label: 'Offset zona horaria (min)', type: 'number' },
   { key: 'default_category', label: 'Categoría default' },
-  { key: 'ai_model', label: 'Modelo OpenRouter' },
+  { key: 'ai_provider', label: 'Proveedor de IA', options: ['openrouter', 'minimax'] },
+  { key: 'ai_model', label: 'Modelo (según proveedor)' },
   { key: 'publish_status', label: 'Estado al publicar (publish/draft)' },
   { key: 'auto_improve', label: 'Mejora masiva automática (true/false)' },
   { key: 'improve_daily_batch', label: 'Posts viejos a mejorar por día', type: 'number' },
@@ -194,11 +195,20 @@ export default function AutoImportPanel({ apiBase }: { apiBase: string }) {
             {SETTING_FIELDS.map(f => (
               <label key={f.key}>
                 <span>{f.label}</span>
-                <input
-                  type={f.type || 'text'}
-                  value={draftSettings[f.key] ?? ''}
-                  onChange={e => setDraftSettings(s => ({ ...s, [f.key]: e.target.value }))}
-                />
+                {f.options ? (
+                  <select
+                    value={draftSettings[f.key] ?? f.options[0]}
+                    onChange={e => setDraftSettings(s => ({ ...s, [f.key]: e.target.value }))}
+                  >
+                    {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    type={f.type || 'text'}
+                    value={draftSettings[f.key] ?? ''}
+                    onChange={e => setDraftSettings(s => ({ ...s, [f.key]: e.target.value }))}
+                  />
+                )}
               </label>
             ))}
           </div>

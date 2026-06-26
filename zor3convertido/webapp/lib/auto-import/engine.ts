@@ -64,8 +64,11 @@ interface RewriteOutcome {
 
 async function rewriteWithFix(
   input: Parameters<typeof rewriteEditorial>[0],
-  opts: { model: string; prompt: string }
+  optsIn: { model: string; prompt: string }
 ): Promise<RewriteOutcome> {
+  // Proveedor de IA elegido en el panel (openrouter o minimax).
+  const provider = getSetting('ai_provider') === 'minimax' ? 'minimax' as const : 'openrouter' as const
+  const opts = { ...optsIn, provider }
   const maxRetries = Math.max(0, settingInt('fix_retries', 2))
   let result = await rewriteEditorial(input, opts)
   let tCheck = checkTitle(result.title)

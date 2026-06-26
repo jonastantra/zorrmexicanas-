@@ -19,12 +19,29 @@ export interface RewriteResult {
 
 export class OpenRouterError extends Error {}
 
+export type AiProvider = 'openrouter' | 'minimax'
+
+// Config por proveedor. Ambos usan una API compatible con OpenAI
+// (chat/completions). Las llaves van en variables de entorno.
+function providerConfig(provider: AiProvider): { url: string; key: string | undefined; keyName: string } {
+  if (provider === 'minimax') {
+    const base = (process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1').replace(/\/$/, '')
+    return { url: `${base}/chat/completions`, key: process.env.MINIMAX_API_KEY, keyName: 'MINIMAX_API_KEY' }
+  }
+  return {
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    key: process.env.OPENROUTER_API_KEY,
+    keyName: 'OPENROUTER_API_KEY',
+  }
+}
+
 export async function rewriteEditorial(
   input: RewriteInput,
-  opts: { model?: string; prompt: string }
+  opts: { model?: string; prompt: string; provider?: AiProvider }
 ): Promise<RewriteResult> {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) throw new OpenRouterError('OPENROUTER_API_KEY no configurado')
+  const provider: AiProvider = opts.provider === 'minimax' ? 'minimax' : 'openrouter'
+  const cfg = providerConfig(provider)
+  if (!cfg.key) throw new OpenRouterError(`${cfg.keyName} no configurado`)
 
   const model = opts.model || process.env.OPENROUTER_MODEL || 'qwen/qwen-2.5-72b-instruct'
 
@@ -32,15 +49,18 @@ export async function rewriteEditorial(
   const timeout = setTimeout(() => controller.abort(), 30000)
   let response: Response
   try {
-    response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${cfg.key}`,
+      'Content-Type': 'application/json',
+    }
+    if (provider === 'openrouter') {
+      headers['HTTP-Referer'] = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      headers['X-Title'] = process.env.NEXT_PUBLIC_SITE_NAME || 'AutoImport'
+    }
+    response = await fetch(cfg.url, {
       method: 'POST',
       signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
-        'X-Title': 'Zorritas Mexicanas AutoImport',
-      },
+      headers,
       body: JSON.stringify({
         model,
         response_format: { type: 'json_object' },

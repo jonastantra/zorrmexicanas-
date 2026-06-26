@@ -46,6 +46,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   max_candidates_per_run: '120',
   rewrite_batch: '40',
   ai_enabled: 'true',
+  ai_provider: 'openrouter', // 'openrouter' | 'minimax'
   ai_model: 'qwen/qwen-2.5-72b-instruct',
   ai_prompt: DEFAULT_PROMPT,
   publish_status: 'publish',

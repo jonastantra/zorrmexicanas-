@@ -54,7 +54,7 @@
 .ai-settings { background: #16161f; border: 1px solid #333; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .ai-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
 .ai-settings label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #aaa; }
-.ai-settings input, .ai-settings textarea, .ai-modal input, .ai-modal textarea {
+.ai-settings input, .ai-settings textarea, .ai-settings select, .ai-modal input, .ai-modal textarea {
   background: #0d0d13; border: 1px solid #383852; border-radius: 5px; color: #fff; padding: 6px 8px; font-size: 12px;
 }
 .ai-prompt { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }

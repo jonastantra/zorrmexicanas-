@@ -31,17 +31,21 @@ export const SITE_CONFIG = {
 export const THEMES: Record<string, Record<string, string>> = {
   rose: {
     '--accent': '#ff2e63',
-    '--accent-hover': '#ff5588',
-    '--accent-soft': 'rgba(255, 46, 99, 0.15)',
-    '--accent-gradient': 'linear-gradient(135deg, #ff2e63 0%, #ff6b3d 100%)',
-    '--accent-gradient-hover': 'linear-gradient(135deg, #ff5588 0%, #ff8c5e 100%)',
+    '--accent-hover': '#ff5e8a',
+    '--accent-soft': 'rgba(255, 46, 99, 0.16)',
+    // Gradiente de 3 paradas, más vibrante (rosa → coral → ámbar).
+    '--accent-gradient': 'linear-gradient(135deg, #ff2e63 0%, #ff4d5e 45%, #ff8a3d 100%)',
+    '--accent-gradient-hover': 'linear-gradient(135deg, #ff5e8a 0%, #ff6e6e 45%, #ffa45e 100%)',
+    '--accent-glow': '0 8px 30px rgba(255, 46, 99, 0.35)',
   },
   blue: {
     '--accent': '#2f6bff',
     '--accent-hover': '#5b8bff',
-    '--accent-soft': 'rgba(47, 107, 255, 0.16)',
-    '--accent-gradient': 'linear-gradient(135deg, #2f6bff 0%, #21d4fd 100%)',
-    '--accent-gradient-hover': 'linear-gradient(135deg, #5b8bff 0%, #4be1ff 100%)',
+    '--accent-soft': 'rgba(47, 107, 255, 0.18)',
+    // Azul eléctrico → cian.
+    '--accent-gradient': 'linear-gradient(135deg, #2f6bff 0%, #00b4ff 50%, #21e0fd 100%)',
+    '--accent-gradient-hover': 'linear-gradient(135deg, #5b8bff 0%, #3fcaff 50%, #5beaff 100%)',
+    '--accent-glow': '0 8px 30px rgba(47, 107, 255, 0.38)',
   },
 }
 
